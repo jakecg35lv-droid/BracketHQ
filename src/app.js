@@ -1,6 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   BRACKET HQ: app.js
-   Vanilla JS, no frameworks, localStorage persistence
+src/app.js   Vanilla JS, no frameworks, localStorage persistence
 ══════════════════════════════════════════════════════════ */
 
 'use strict';
