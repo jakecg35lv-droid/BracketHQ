@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Bracket HQ</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0a0d1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bracket HQ" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow:wght@600;700;800;900&family=Barlow+Condensed:wght@700;800;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════ -->
+  <div id="loginScreen" class="screen">
+    <img src="logo.png" class="auth-bg-logo" alt="" aria-hidden="true" />
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="logo.png" class="logo-mark" width="110" height="110" alt="Bracket HQ logo" />
+      </div>
+      <h2 class="auth-title">Sign in Here</h2>
+      <p class="auth-sub">A New Way to March</p>
+      <div class="auth-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div id="loginError" class="auth-error" style="display:none;"></div>
+        <button id="loginSubmitBtn" class="btn-primary btn-full">Sign In</button>
+      </div>
+      <p class="auth-switch">Don't have an account? <a id="showSignupLink" href="#">Sign up</a></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     SIGNUP SCREEN
+════════════════════════════════════════════ -->
+  <div id="signupScreen" class="screen" style="display:none;">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="logo.png" class="logo-mark" width="90" height="90" alt="Bracket HQ logo" />
+      </div>
+      <h2 class="auth-title">Create Account</h2>
+      <p class="auth-sub">Join the madness.</p>
+      <div class="auth-form">
+        <div class="form-group">
+          <label>Display Name</label>
+          <input type="text" id="signupUsername" placeholder="Your name" autocomplete="nickname" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signupPassword" placeholder="6+ characters" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="signupConfirm" placeholder="Repeat password" autocomplete="new-password" />
+        </div>
+        <div id="signupError" class="auth-error" style="display:none;"></div>
+        <button id="signupSubmitBtn" class="btn-primary btn-full">Create Account</button>
+      </div>
+      <p class="auth-switch">Already have an account? <a id="showLoginLink" href="#">Sign in</a></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     SPLASH SCREEN
+════════════════════════════════════════════ -->
+  <div id="splashScreen" class="screen" style="display:none;">
+    <div class="splash-hero">
+      <div class="splash-logo">
+        <div class="splash-flash"></div>
+        <div class="splash-rays"></div>
+        <img src="logo.png" class="splash-logo-img" width="200" height="200" alt="Bracket HQ logo" />
+        <p class="splash-tag">Draft. Compete. Win.</p>
+      </div>
+      <div class="splash-actions">
+        <button id="createLeagueSplashBtn" class="btn-primary btn-lg">+ Create League</button>
+        <button id="joinLeagueSplashBtn" class="btn-ghost btn-lg">Join League</button>
+        <button id="splashBackBtn" class="btn-sign-out" style="margin-top:8px;">← Back to Login</button>
+      </div>
+    </div>
+    <div class="splash-leagues">
+      <h3 class="splash-leagues-title">Your Leagues</h3>
+      <div id="savedLeaguesList" class="saved-leagues-list">
+        <p class="no-leagues">No leagues yet. Create or join one above.</p>
+      </div>
+    </div>
+    <!-- Footer actions -->
+    <div class="splash-footer">
+      <button id="signOutBtn" class="btn-sign-out">Sign Out</button>
+    </div>
+
+    <!-- Join modal -->
+    <div id="joinModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-card">
+        <h3>Join a League</h3>
+        <p class="modal-sub" id="joinModalSub">Enter the 6-character league code from your commissioner.</p>
+        <input type="text" id="joinCodeInput" placeholder="ABC123" maxlength="6" class="code-input" />
+        <div id="joinError" class="auth-error" style="display:none;"></div>
+        <div class="modal-actions">
+          <button id="joinCancelBtn" class="btn-ghost">Cancel</button>
+          <button id="joinConfirmBtn" class="btn-primary">Join</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════ -->
+  <div id="mainApp" style="display:none;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="logo.png" class="logo-mark sidebar-logo-img" width="42" height="42" alt="Bracket HQ" />
+        <span class="sidebar-logo-text">Bracket HQ</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-page="home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          Home
+        </button>
+        <button class="nav-btn" data-page="draft">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          Draft
+        </button>
+        <button class="nav-btn" data-page="players">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Players
+        </button>
+        <button class="nav-btn" data-page="teams">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" />
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+          </svg>
+          Teams
+        </button>
+        <button class="nav-btn" data-page="standings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          Standings
+        </button>
+        <button class="nav-btn" data-page="bracket">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h6v4H4zM14 4h6v4h-6zM14 10h6v4h-6zM4 16h6v4H4zM14 16h6v4h-6z" />
+            <line x1="10" y1="6" x2="14" y2="6" />
+            <line x1="10" y1="18" x2="14" y2="18" />
+            <line x1="20" y1="8" x2="20" y2="12" />
+            <line x1="20" y1="12" x2="14" y2="12" />
+            <line x1="4" y1="12" x2="10" y2="12" />
+            <line x1="10" y1="12" x2="10" y2="18" />
+          </svg>
+          Bracket
+        </button>
+        <button class="nav-btn" data-page="chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Chat
+          <span class="chat-badge" style="display:none;"></span>
+        </button>
+        <button class="nav-btn" data-page="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          Settings
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-profile-btn" id="sidebarUser" data-page="profile"></button>
+        <button class="nav-btn signout-btn" id="navSignOutBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sign Out
+        </button>
+        <div class="sidebar-theme-toggle">
+          <button class="theme-toggle-btn theme-btn-dark active" id="themeToggleDark">Dark</button>
+          <button class="theme-toggle-btn theme-btn-light" id="themeToggleLight">Light</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- Mobile sticky clock bar (hidden on desktop) -->
+      <div class="mobile-clock-bar" id="mobileClockBar">
+        <button class="mcb-profile-btn" id="mcbProfileBtn" aria-label="Profile"></button>
+        <div class="mcb-clock-info">
+          <div class="mcb-label">On the Clock</div>
+          <div class="mcb-manager" id="mcbManager">-</div>
+        </div>
+        <div class="mcb-timer" id="mcbTimer">-</div>
+        <img src="logo.png" class="mcb-logo" alt="" aria-hidden="true" />
+      </div>
+
+      <!-- YOU'RE ON THE CLOCK banner (shows on any page when it's your pick) -->
+      <div class="otc-banner" id="otcBanner" style="display:none;">
+        <div class="otc-inner">
+          <span class="otc-pulse"></span>
+          <div class="otc-text">
+            <span class="otc-label">Your Pick!</span>
+            <span class="otc-sub">You're on the clock</span>
+          </div>
+          <button class="otc-btn" id="otcDraftBtn">Draft Now →</button>
+        </div>
+      </div>
+
+      <!-- ── HOME ─────────────────────────────────── -->
+      <section id="homePage" class="page active-page">
+        <!-- Desktop top bar -->
+        <div class="home-top-bar">
+          <div class="home-otc-chip" id="homeOtcChip">
+            <span class="home-otc-dot"></span>
+            <div class="home-otc-info">
+              <span class="home-otc-label-text">ON THE CLOCK</span>
+              <div class="home-otc-manager-row">
+                <span id="homeOtcChipText">-</span>
+                <span class="home-you-badge" id="homeYouBadge" style="display:none">YOU</span>
+              </div>
+            </div>
+          </div>
+          <div class="home-top-bar-right">
+            <button class="home-notif-btn" id="homeNotifBtn" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </button>
+            <div class="home-user-chip" id="homeUserChip">
+              <div class="home-user-avatar" id="homeUserAvatar"></div>
+              <span id="homeUserName">-</span>
+              <span class="home-user-chevron">▾</span>
+            </div>
+          </div>
+        </div>
+        <div class="page-header">
+          <h2 id="homeLeagueName">My League</h2>
+          <span id="homeStatusPill" class="status-pill status-setup">Setup</span>
+        </div>
+
+        <!-- SC Banner -->
+        <div id="scBanner" class="sc-banner" style="display:none;">
+          <strong>Second Chance</strong> pickup window is now open! Head to Players tab to claim.
+        </div>
+
+        <!-- On the Clock hero -->
+        <div class="home-hero-card">
+          <div class="hero-bg-player"></div>
+          <div class="hero-left">
+            <div class="hero-label"><span id="heroRoundLabel">On the Clock</span></div>
+            <div id="homePickManager" class="hero-manager">-</div>
+            <div id="homePickLabel" class="hero-pick-label">No draft started</div>
+            <div class="hero-timer-controls commissioner-only">
+              <button id="startTimerBtnHome" class="btn-hero-primary">Make Pick</button>
+              <button id="pauseBtnHome" class="btn-hero-ghost">⏸ Pause</button>
+              <button id="resetTimerBtn" class="btn-hero-ghost">↺ Reset</button>
+            </div>
+          </div>
+          <div class="hero-clock-wrap">
+            <svg class="hero-ring" viewBox="0 0 160 160">
+              <circle class="hero-ring-bg" cx="80" cy="80" r="70"/>
+              <circle class="hero-ring-progress" id="heroRingProgress" cx="80" cy="80" r="70"/>
+            </svg>
+            <div class="hero-clock-inner">
+              <div class="hero-timer" id="homeTimer">-</div>
+              <div class="hero-timer-label">TIME REMAINING</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat tiles -->
+        <div class="home-stats-grid" id="homeStatsGrid">
+          <div class="stat-tile">
+            <div class="st-icon st-icon-gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+            </div>
+            <div class="st-val" id="statMyRank">-</div>
+            <div class="st-label">My Rank</div>
+            <div class="st-sub" id="statMyRankSub">-</div>
+          </div>
+          <div class="stat-tile">
+            <div class="st-icon st-icon-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="st-val" id="statMyFpts">-</div>
+            <div class="st-label">My Points</div>
+            <div class="st-sub" id="statMyFptsSub">Season total</div>
+          </div>
+          <div class="stat-tile">
+            <div class="st-icon st-icon-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="st-val" id="statPicksLeft">-</div>
+            <div class="st-label">Picks Left</div>
+            <div class="st-sub" id="statPicksLeftSub">-</div>
+          </div>
+          <div class="stat-tile stat-tile-leader">
+            <div class="st-icon st-icon-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <div class="st-val st-val-sm" id="statLeaderName">-</div>
+            <div class="st-label">Leading</div>
+            <div class="st-sub" id="statLeaderSub">-</div>
+          </div>
+        </div>
+
+        <!-- Action grid -->
+        <h3 class="section-title" style="margin-bottom:10px;">Quick Actions</h3>
+        <div class="home-grid">
+          <div class="home-card" data-page="draft">
+            <div class="hc-icon hc-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="hc-info">
+              <div class="hc-label">Draft Room</div>
+              <div class="hc-sub">Browse available picks</div>
+            </div>
+            <span class="hc-arrow">→</span>
+          </div>
+          <div class="home-card" data-page="players">
+            <div class="hc-icon hc-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="hc-info">
+              <div class="hc-label">Players</div>
+              <div class="hc-sub">Browse available players</div>
+            </div>
+            <span class="hc-arrow">→</span>
+          </div>
+          <div class="home-card" data-page="teams">
+            <div class="hc-icon hc-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            </div>
+            <div class="hc-info">
+              <div class="hc-label">Teams</div>
+              <div class="hc-sub">View all team rosters</div>
+            </div>
+            <span class="hc-arrow">→</span>
+          </div>
+          <div class="home-card" data-page="standings">
+            <div class="hc-icon hc-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="hc-info">
+              <div class="hc-label">Standings</div>
+              <div class="hc-sub">Check the race</div>
+            </div>
+            <span class="hc-arrow">→</span>
+          </div>
+          <div class="home-card" data-page="bracket">
+            <div class="hc-icon hc-teal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v4H4zM14 4h6v4h-6zM14 10h6v4h-6zM4 16h6v4H4zM14 16h6v4h-6z"/></svg>
+            </div>
+            <div class="hc-info">
+              <div class="hc-label">Bracket</div>
+              <div class="hc-sub">Tournament tree</div>
+            </div>
+            <span class="hc-arrow">→</span>
+          </div>
+          <div class="home-card" data-page="chat">
+            <div class="hc-icon hc-pink">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="hc-info">
+              <div class="hc-label">Chat</div>
+              <div class="hc-sub">League messages</div>
+            </div>
+            <span class="hc-arrow">→</span>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="home-section">
+          <h3 class="section-title">Activity</h3>
+          <div id="activityFeed" class="activity-feed">
+            <p class="feed-empty">No activity yet.</p>
+          </div>
+        </div>
+
+        <!-- League Setup (commissioner-only, pre-draft) -->
+        <div id="leagueSetupPanel" class="panel commissioner-only" style="margin-top:24px;">
+          <h3 class="panel-title">League Setup</h3>
+          <div class="setup-grid">
+            <div class="form-group">
+              <label>League Name</label>
+              <input type="text" id="setupLeagueName" placeholder="My League" />
+            </div>
+            <div class="form-group">
+              <label>Managers <span class="muted">(comma-separated)</span></label>
+              <input type="text" id="setupManagers" placeholder="Jake, Alex, Morgan, Taylor" />
+            </div>
+            <div class="form-group">
+              <label>Rounds</label>
+              <input type="number" id="setupRounds" value="8" min="1" max="20" />
+            </div>
+          </div>
+          <button id="setupSaveBtn" class="btn-primary">Create Draft Order</button>
+        </div>
+
+        <!-- Home Footer -->
+        <div class="home-footer">
+          <span class="home-footer-brand">Bracket HQ</span>
+          <div class="home-footer-socials">
+            <a href="#" class="home-footer-icon" aria-label="Twitter">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
+            </a>
+            <a href="#" class="home-footer-icon" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            </a>
+            <a href="#" class="home-footer-icon" aria-label="Discord">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── DRAFT ─────────────────────────────────── -->
+      <section id="draftPage" class="page" style="display:none;">
+        <div class="draft-hero">
+          <div class="draft-hero-left">
+            <h2 class="draft-hero-title">Snake Draft Room</h2>
+            <p class="draft-hero-sub" id="draftHeroSub">Waiting for draft to begin…</p>
+          </div>
+          <div class="draft-pick-card" id="draftPickCard">
+            <div class="dpc-label">On the Clock</div>
+            <div class="dpc-manager" id="draftPickManager">-</div>
+            <div class="dpc-round" id="draftPickLabel">-</div>
+          </div>
+        </div>
+
+        <div class="draft-clock-banner" id="draftClockBanner">
+          <span class="dcb-name" id="dcbManagerName">-</span>
+          <span class="dcb-sep">·</span>
+          <span class="dcb-timer" id="dcbTimer">-</span>
+        </div>
+
+        <div class="draft-order-strip-wrap">
+          <div class="draft-order-strip" id="draftOrderStrip"></div>
+        </div>
+
+        <div class="draft-content">
+          <div class="draft-left">
+            <div class="draft-toolbar">
+              <input type="text" id="draftSearch" placeholder="Search players…" class="pool-search" />
+              <select id="draftPosFilter" class="pool-select">
+                <option value="">All Positions</option>
+                <option value="G">Guards</option>
+                <option value="F">Forwards</option>
+                <option value="C">Centers</option>
+              </select>
+            </div>
+            <div class="pool-table-wrap">
+              <div class="pool-header">
+                <span class="ph-rank">#</span>
+                <span class="ph-player">Player</span>
+                <span class="ph-seed">Seed</span>
+                <span class="ph-stat sortable" data-col="points">PTS</span>
+                <span class="ph-stat sortable" data-col="rebounds">REB</span>
+                <span class="ph-stat sortable" data-col="assists">AST</span>
+                <span class="ph-stat sortable" data-col="steals">STL</span>
+                <span class="ph-stat sortable" data-col="blocks">BLK</span>
+                <span class="ph-stat sortable" data-col="fpts">FPTS</span>
+                <span class="ph-action">Action</span>
+              </div>
+              <div id="draftPlayerGrid"></div>
+            </div>
+          </div>
+          <div class="draft-feed-panel">
+            <h3 class="feed-title">Recent Picks</h3>
+            <div id="draftRecentPicks" class="recent-picks-list"></div>
+          </div>
+        </div>
+
+        <!-- Commissioner controls -->
+        <div class="draft-commissioner-controls commissioner-only">
+          <button id="startTimerBtnDraft" class="btn-sm btn-green">▶ Start</button>
+          <button id="pauseBtnDraft" class="btn-sm btn-ghost">Pause</button>
+          <button id="resetTimerBtnDraft" class="btn-sm btn-ghost">↺ Reset</button>
+          <div class="dcc-divider"></div>
+          <button id="undoPickBtn" class="btn-sm btn-ghost">↩ Undo</button>
+          <button id="autopickBtn" class="btn-sm btn-ghost">Autopick</button>
+          <button id="skipPickBtn" class="btn-sm btn-ghost">Skip</button>
+          <button id="resetDraftBtn" class="btn-sm btn-red">Reset Draft</button>
+        </div>
+      </section>
+
+      <!-- ── PLAYERS ────────────────────────────────── -->
+      <section id="playersPage" class="page" style="display:none;">
+        <div class="page-header">
+          <h2>Player Pool</h2>
+          <span id="poolAvailCount" class="muted-badge">available</span>
+        </div>
+        <!-- Card / List view toggle -->
+        <div class="pool-view-toggle">
+          <button class="view-btn active" id="poolListViewBtn">≡ List</button>
+          <button class="view-btn" id="poolCardViewBtn">⊞ Cards</button>
+        </div>
+        <div class="pool-toolbar">
+          <input type="text" id="poolSearch" placeholder="Search players…" class="pool-search" />
+          <select id="poolSeedFilter" class="pool-select">
+            <option value="">All Seeds</option>
+            <option value="1-4">Seeds 1–4</option>
+            <option value="5-8">Seeds 5–8</option>
+            <option value="9-12">Seeds 9–12</option>
+            <option value="13-16">Seeds 13–16</option>
+          </select>
+          <select id="poolSortSelect" class="pool-select">
+            <option value="fpts">Best Available (FPTS)</option>
+            <option value="points">Most Points</option>
+            <option value="rebounds">Most Rebounds</option>
+            <option value="assists">Most Assists</option>
+          </select>
+        </div>
+        <div class="pool-table-wrap">
+          <div class="pool-header">
+            <span class="ph-rank">#</span>
+            <span class="ph-player">Player</span>
+            <span class="ph-seed">Seed</span>
+            <span class="ph-stat sortable" data-col="points">PTS</span>
+            <span class="ph-stat sortable" data-col="rebounds">REB</span>
+            <span class="ph-stat sortable" data-col="assists">AST</span>
+            <span class="ph-stat sortable" data-col="steals">STL</span>
+            <span class="ph-stat sortable" data-col="blocks">BLK</span>
+            <span class="ph-stat sortable" data-col="fpts">FPTS</span>
+            <span class="ph-action">Status</span>
+          </div>
+          <div id="playerPoolGrid"></div>
+        </div>
+        <!-- Card grid view (shown when card toggle is active) -->
+        <div class="player-card-grid" id="playerCardGrid"></div>
+      </section>
+
+      <!-- ── TEAMS ─────────────────────────────────── -->
+      <section id="teamsPage" class="page" style="display:none;">
+        <div class="page-header">
+          <h2>Teams &amp; Rosters</h2>
+        </div>
+        <div id="teamsGrid" class="teams-grid"></div>
+      </section>
+
+      <!-- ── STANDINGS ──────────────────────────────── -->
+      <section id="standingsPage" class="page" style="display:none;">
+        <div class="page-header">
+          <h2>Standings</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="simulateBtn" class="btn-primary btn-sm commissioner-only">Simulate Stats</button>
+            <button id="resetStatsBtn" class="btn-ghost btn-sm commissioner-only" style="display:none;">↺ Reset</button>
+          </div>
+        </div>
+        <div class="standings-header-row">
+          <span class="sh-rank">Rank</span>
+          <span class="sh-name">Manager</span>
+          <span class="sh-pts">FPTS</span>
+          <span class="sh-proj">Proj</span>
+          <span class="sh-cat">PTS</span>
+          <span class="sh-cat">REB</span>
+          <span class="sh-cat">AST</span>
+          <span class="sh-cat">STL</span>
+          <span class="sh-cat">BLK</span>
+          <span class="sh-delta">±</span>
+        </div>
+        <div id="standingsList" class="standings-list"></div>
+
+        <!-- Points Projection Panel -->
+        <div class="proj-panel" id="projPanel" style="display:none;">
+          <div class="proj-panel-header">
+            <div class="proj-panel-title">
+              <span class="proj-dot"></span>
+              Points Remaining
+            </div>
+            <span class="proj-subtitle">Max possible if all alive teams win out</span>
+          </div>
+          <div id="projList" class="proj-list"></div>
+        </div>
+      </section>
+
+      <!-- ── BRACKET ────────────────────────────────── -->
+      <section id="bracketPage" class="page" style="display:none;">
+        <div class="page-header">
+          <h2>Tournament Bracket</h2>
+        </div>
+        <div class="bracket-tabs">
+          <button class="bracket-tab active" data-region="East">East</button>
+          <button class="bracket-tab" data-region="South">South</button>
+          <button class="bracket-tab" data-region="Midwest">Midwest</button>
+          <button class="bracket-tab" data-region="West">West</button>
+          <button class="bracket-tab bracket-tab-ff" data-region="FinalFour">Final Four</button>
+        </div>
+        <div id="bracketContent" class="bracket-content"></div>
+      </section>
+
+      <!-- ── CHAT ─────────────────────────────────── -->
+      <section id="chatPage" class="page chat-page" style="display:none;">
+        <div class="page-header">
+          <h2>League Chat</h2>
+        </div>
+        <div class="chat-wrap">
+          <div id="chatMessages" class="chat-messages"></div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Say something to the league…" maxlength="280" autocomplete="off" />
+            <button id="chatSendBtn" class="chat-send-icon-btn" aria-label="Send message">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PROFILE ──────────────────────────────── -->
+      <section id="profilePage" class="page" style="display:none;">
+
+        <!-- Hero banner -->
+        <div class="profile-hero" id="profileHero">
+          <div class="profile-hero-bg" id="profileHeroBg"></div>
+          <div class="profile-hero-body">
+            <div class="profile-avatar-ring" id="profileAvatarRing">
+              <div id="profileAvatar" class="profile-avatar-lg"></div>
+              <button class="avatar-upload-btn" id="avatarUploadBtn" title="Change photo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </button>
+              <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
+            </div>
+            <div class="profile-hero-info">
+              <div class="profile-name-row" id="profileNameRow">
+                <span id="profileNameDisplay" class="profile-name"></span>
+                <button class="profile-edit-btn" id="profileEditBtn" title="Edit name">Edit</button>
+              </div>
+              <div class="profile-edit-row" id="profileEditRow" style="display:none;">
+                <input type="text" id="profileNameInput" class="profile-name-input" maxlength="24" placeholder="Display name" />
+                <button class="btn-primary btn-sm" id="profileSaveBtn">Save</button>
+                <button class="btn-ghost btn-sm" id="profileCancelBtn">Cancel</button>
+              </div>
+              <div class="profile-email" id="profileEmail"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="profile-stats-grid" id="profileStats"></div>
+
+        <!-- Invite / Refer a Friend -->
+        <div class="profile-invite-card">
+          <div class="profile-invite-icon"></div>
+          <div class="profile-invite-text">
+            <div class="profile-invite-title">Invite Friends</div>
+            <div class="profile-invite-sub">Send your league link. They join in one tap.</div>
+          </div>
+          <button class="profile-invite-btn" id="profileShareBtn">Share →</button>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="profile-actions-grid">
+          <button class="profile-action-card" id="profileGoSettings">
+            <div class="profile-action-icon pac-settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <span class="profile-action-label">Settings</span>
+          </button>
+          <button class="profile-action-card" id="profileGoDraft">
+            <div class="profile-action-icon pac-draft">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span class="profile-action-label">Draft Room</span>
+          </button>
+          <button class="profile-action-card" id="profileGoStandings">
+            <div class="profile-action-icon pac-standings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <span class="profile-action-label">Standings</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ── SETTINGS ───────────────────────────────── -->
+      <section id="settingsPage" class="page" style="display:none;">
+        <div class="page-header">
+          <h2>Settings</h2>
+        </div>
+
+        <!-- Scoring -->
+        <div class="panel">
+          <h3 class="panel-title">Scoring Categories</h3>
+          <div class="scoring-grid">
+            <div class="scoring-row">
+              <label class="toggle-label"><input type="checkbox" id="pointsToggle" checked /> Points</label>
+              <div class="weight-group"><label>Weight</label><input type="number" id="pointsWeight" value="1" min="0.1"
+                  max="10" step="0.1" class="weight-input" /></div>
+            </div>
+            <div class="scoring-row">
+              <label class="toggle-label"><input type="checkbox" id="reboundsToggle" checked /> Rebounds</label>
+              <div class="weight-group"><label>Weight</label><input type="number" id="reboundsWeight" value="1.2"
+                  min="0.1" max="10" step="0.1" class="weight-input" /></div>
+            </div>
+            <div class="scoring-row">
+              <label class="toggle-label"><input type="checkbox" id="assistsToggle" checked /> Assists</label>
+              <div class="weight-group"><label>Weight</label><input type="number" id="assistsWeight" value="1.5"
+                  min="0.1" max="10" step="0.1" class="weight-input" /></div>
+            </div>
+            <div class="scoring-row">
+              <label class="toggle-label"><input type="checkbox" id="stealsToggle" checked /> Steals</label>
+              <div class="weight-group"><label>Weight</label><input type="number" id="stealsWeight" value="2" min="0.1"
+                  max="10" step="0.1" class="weight-input" /></div>
+            </div>
+            <div class="scoring-row">
+              <label class="toggle-label"><input type="checkbox" id="blocksToggle" checked /> Blocks</label>
+              <div class="weight-group"><label>Weight</label><input type="number" id="blocksWeight" value="2" min="0.1"
+                  max="10" step="0.1" class="weight-input" /></div>
+            </div>
+          </div>
+          <button id="saveScoringBtn" class="btn-primary">Save Scoring</button>
+        </div>
+
+        <!-- Timer -->
+        <div class="panel">
+          <h3 class="panel-title">Pick Timer</h3>
+          <div class="timer-setup-row">
+            <div class="form-group">
+              <label>Minutes</label>
+              <select id="timerMinutes" class="pool-select">
+                <option value="0">0</option>
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Seconds</label>
+              <select id="timerSeconds" class="pool-select">
+                <option value="0">00</option>
+                <option value="15">15</option>
+                <option value="30" selected>30</option>
+                <option value="45">45</option>
+              </select>
+            </div>
+          </div>
+          <button id="saveTimerBtn" class="btn-primary">Save Timer</button>
+        </div>
+
+        <!-- Notifications -->
+        <div class="panel">
+          <h3 class="panel-title">Notifications</h3>
+          <div class="sc-settings-row">
+            <label class="toggle-label"><input type="checkbox" id="notifToggle" /> "On the Clock" alerts</label>
+            <span id="notifStatusPill" class="status-pill status-off">Off</span>
+          </div>
+          <p class="muted" style="margin-top:8px;font-size:13px;" id="notifStatusDesc">
+            Get a browser notification when it's your pick, even if the app is in the background.
+          </p>
+          <button class="btn-ghost btn-sm" id="notifEnableBtn" style="margin-top:10px;display:none;">Enable Notifications</button>
+        </div>
+
+        <!-- Second Chance -->
+        <div class="panel">
+          <h3 class="panel-title">Second Chance Pickups</h3>
+          <div class="sc-settings-row">
+            <label class="toggle-label"><input type="checkbox" id="scEnabledToggle" /> Enable Second Chance</label>
+            <span id="scStatusPill" class="status-pill status-off">Off</span>
+          </div>
+          <div class="sc-btn-row commissioner-only">
+            <button id="openSCBtn" class="btn-primary btn-sm">Open Window</button>
+            <button id="closeSCBtn" class="btn-ghost btn-sm">Close Window</button>
+          </div>
+          <p class="muted" style="margin-top:8px;font-size:13px;">Second Chance window auto-opens after all Round of 64
+            games complete (if enabled).</p>
+        </div>
+
+        <!-- League Management -->
+        <div class="panel commissioner-only">
+          <h3 class="panel-title">League Management</h3>
+          <div class="form-group">
+            <label>League Code</label>
+            <div class="code-display-row">
+              <span id="settingsLeagueCodeDisplay" class="league-code-badge">--</span>
+              <button id="copyCodeBtn" class="btn-ghost btn-sm">Copy Code</button>
+              <button id="shareInviteBtn" class="btn-ghost btn-sm">🔗 Invite Link</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:16px;">
+            <label>Edit League Name</label>
+            <input type="text" id="settingsEditLeagueName" placeholder="League name" />
+            <button id="saveLeagueNameBtn" class="btn-primary btn-sm" style="margin-top:8px;">Save Name</button>
+          </div>
+          <hr class="divider" />
+          <button id="restartLeagueBtn" class="btn-ghost" style="margin-top:8px;">↺ Restart League</button>
+          <p class="muted" style="font-size:12px;margin-top:6px;">Clears all picks and resets the draft. Keeps the same managers, settings, and league code.</p>
+          <button id="dissolveLeagueBtn" class="btn-red" style="margin-top:12px;">Delete League</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right-panel" id="rightPanel">
+      <!-- UP NEXT -->
+      <div class="rp-section">
+        <div class="rp-section-title">Up Next</div>
+        <div id="rpUpNext"><!-- rendered by JS --></div>
+        <button class="rp-view-all-btn" onclick="navigateTo('draft')">View Draft Order →</button>
+      </div>
+      <!-- STANDINGS -->
+      <div class="rp-section">
+        <div class="rp-section-header">
+          <span class="rp-section-title">Standings</span>
+          <button class="rp-link-btn" onclick="navigateTo('standings')">View All</button>
+        </div>
+        <div id="rpStandings"><!-- rendered by JS --></div>
+        <button class="rp-view-all-btn" onclick="navigateTo('standings')">Full Standings →</button>
+      </div>
+      <!-- LEAGUE CHAT -->
+      <div class="rp-section rp-section-chat">
+        <div class="rp-section-title">League Chat</div>
+        <div id="rpChatMessages" class="rp-chat-msgs"><!-- rendered by JS --></div>
+        <div class="rp-chat-input-row">
+          <input type="text" id="rpChatInput" placeholder="Type a message…" class="rp-chat-input" maxlength="280" />
+          <button id="rpChatSendBtn" class="rp-chat-send" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </div><!-- /mainApp -->
+
+  <!-- Confetti -->
+  <div id="confettiContainer" style="position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;"></div>
+
+  <!-- ═══════════════════════════════════════════
+     OVERLAYS
+════════════════════════════════════════════ -->
+
+  <!-- Enter League Animation -->
+  <div id="leoOverlay" class="leo" style="display:none;">
+    <div class="leo-ring leo-ring--1"></div>
+    <div class="leo-ring leo-ring--2"></div>
+    <div class="leo-ring leo-ring--3"></div>
+    <div class="leo-corner leo-corner--tl"></div>
+    <div class="leo-corner leo-corner--tr"></div>
+    <div class="leo-corner leo-corner--bl"></div>
+    <div class="leo-corner leo-corner--br"></div>
+    <div class="leo-name" id="leoName"></div>
+  </div>
+
+  <!-- Pick Announcement -->
+  <div id="pickAnnounce" class="pick-announce" style="display:none;">
+    <div class="pa-card" id="paCard">
+      <div class="pa-logo" id="paLogo"></div>
+      <div class="pa-player" id="paPlayer"></div>
+      <div class="pa-college" id="paCollege"></div>
+      <div class="pa-pos" id="paPos"></div>
+      <div class="pa-by" id="paBy"></div>
+    </div>
+  </div>
+
+  <!-- Draft Confirm Modal -->
+  <div id="draftConfirmModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <div class="confirm-logo" id="confirmLogo"></div>
+      <h3 id="confirmPlayerName">Player Name</h3>
+      <p id="confirmPlayerDetail" class="modal-sub"></p>
+      <div class="confirm-stats" id="confirmStats"></div>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" class="btn-ghost">Cancel</button>
+        <button id="confirmPickBtn" class="btn-primary draft-go">Confirm Pick ›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player Detail Card -->
+  <div id="pdcOverlay" class="pdc-overlay" style="display:none;">
+    <div class="pdc-card" id="pdcCard">
+      <button class="pdc-close" id="pdcClose">✕</button>
+      <div class="pdc-header">
+        <div class="pdc-logo" id="pdcLogo"></div>
+        <div class="pdc-info">
+          <h3 id="pdcName"></h3>
+          <div class="pdc-meta">
+            <span class="pos-badge" id="pdcPos"></span>
+            <span class="seed-badge" id="pdcSeed"></span>
+            <span class="region-badge" id="pdcRegion"></span>
+          </div>
+          <div class="pdc-college" id="pdcCollege"></div>
+        </div>
+      </div>
+      <div class="pdc-stats" id="pdcStats"></div>
+      <div class="pdc-draft-status" id="pdcDraftStatus"></div>
+      <div class="pdc-sc-btn" id="pdcSCBtn" style="display:none;">
+        <button id="claimSCBtn" class="btn-primary">Claim (Second Chance)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restart League Confirm Modal -->
+  <div id="restartModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <h3>Restart League</h3>
+      <p class="modal-sub">All picks will be cleared and the draft resets to Round 1, Pick 1. Your managers, league code, and settings stay the same.</p>
+      <div class="modal-actions">
+        <button id="restartCancelBtn" class="btn-ghost">Cancel</button>
+        <button id="restartConfirmBtn" class="btn-primary">Yes, Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dissolve Confirm Modal -->
+  <div id="dissolveModal" class="modal-backdrop" style="display:none; align-items: flex-start; padding-top: max(48px, env(safe-area-inset-top, 48px));">
+    <div class="modal-card modal-sm">
+      <h3 style="color:var(--red);">Delete League</h3>
+      <p class="modal-sub">This will permanently delete the league and all draft data. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="dissolveCancelBtn" class="btn-ghost">Cancel</button>
+        <button id="dissolveConfirmBtn" class="btn-red">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trade Modal (TODO: not yet implemented; hidden until trades feature is built) -->
+  <div id="tradeModal" class="modal-backdrop" style="display:none;visibility:hidden;">
+    <div class="modal-card modal-lg">
+      <h3>Propose Trade</h3>
+      <div class="trade-columns">
+        <div class="trade-col">
+          <label>You send</label>
+          <div id="tradeSendList" class="trade-player-list"></div>
+        </div>
+        <div class="trade-arrow">⇄</div>
+        <div class="trade-col">
+          <label>You receive</label>
+          <div id="tradeReceiveList" class="trade-player-list"></div>
+        </div>
+      </div>
+      <p class="modal-sub" id="tradeTarget"></p>
+      <div class="modal-actions">
+        <button id="tradeCancelBtn" class="btn-ghost">Cancel</button>
+        <button id="tradeConfirmBtn" class="btn-primary">Propose Trade</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Tutorial Overlay -->
+  <div id="tutorialOverlay" class="tut-overlay" style="display:none;">
+    <div class="tut-card">
+      <div class="tut-dots" id="tutDots"></div>
+      <div class="tut-body" id="tutBody"></div>
+      <div class="tut-footer">
+        <button class="tut-back-btn" id="tutBackBtn">← Back</button>
+        <button class="tut-next-btn" id="tutNextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB: jump to draft on mobile -->
+  <button class="fab fab-draft commissioner-only" id="draftFab" style="display:none;">
+    <span class="fab-icon">▶</span>
+  </button>
+
+  <script src="data/bracket.js"></script>
+  <script src="data/players.js"></script>
+  <script src="src/app.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[SW] Registered:', reg.scope))
+          .catch(err => console.warn('[SW] Registration failed:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>
