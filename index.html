@@ -141,28 +141,36 @@
       </div>
       <nav class="sidebar-nav">
         <button class="nav-btn active" data-page="home">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Court outline -->
+            <rect x="1" y="3" width="22" height="18" rx="0.5"/>
+            <!-- Half-court line -->
+            <line x1="12" y1="3" x2="12" y2="21"/>
+            <!-- Center circle -->
+            <circle cx="12" cy="12" r="3"/>
+            <!-- Left key -->
+            <rect x="1" y="7.5" width="5" height="9"/>
+            <!-- Right key -->
+            <rect x="18" y="7.5" width="5" height="9"/>
+            <!-- Left basket -->
+            <circle cx="2.5" cy="12" r="0.8" fill="currentColor"/>
+            <!-- Right basket -->
+            <circle cx="21.5" cy="12" r="0.8" fill="currentColor"/>
+            <!-- Left 3pt arc -->
+            <path d="M6 6.5 A6.3 6.3 0 0 1 6 17.5"/>
+            <!-- Right 3pt arc -->
+            <path d="M18 17.5 A6.3 6.3 0 0 1 18 6.5"/>
           </svg>
           Home
         </button>
-        <button class="nav-btn" data-page="draft">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          Draft
-        </button>
         <button class="nav-btn" data-page="players">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            <line x1="19" y1="3" x2="19" y2="9"/>
+            <line x1="16" y1="6" x2="22" y2="6"/>
           </svg>
-          Players
+          Draft
         </button>
         <button class="nav-btn" data-page="teams">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -346,23 +354,13 @@
         <!-- Action grid -->
         <h3 class="section-title" style="margin-bottom:10px;">Quick Actions</h3>
         <div class="home-grid">
-          <div class="home-card" data-page="draft">
-            <div class="hc-icon hc-blue">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div class="hc-info">
-              <div class="hc-label">Draft Room</div>
-              <div class="hc-sub">Browse available picks</div>
-            </div>
-            <span class="hc-arrow">→</span>
-          </div>
           <div class="home-card" data-page="players">
-            <div class="hc-icon hc-green">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <div class="hc-icon hc-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="3" x2="19" y2="9"/><line x1="16" y1="6" x2="22" y2="6"/></svg>
             </div>
             <div class="hc-info">
-              <div class="hc-label">Players</div>
-              <div class="hc-sub">Browse available players</div>
+              <div class="hc-label">Draft</div>
+              <div class="hc-sub">Draft room &amp; player pool</div>
             </div>
             <span class="hc-arrow">→</span>
           </div>
@@ -453,120 +451,129 @@
         </div>
       </section>
 
-      <!-- ── DRAFT ─────────────────────────────────── -->
-      <section id="draftPage" class="page" style="display:none;">
-        <div class="draft-hero">
-          <div class="draft-hero-left">
-            <h2 class="draft-hero-title">Snake Draft Room</h2>
-            <p class="draft-hero-sub" id="draftHeroSub">Waiting for draft to begin…</p>
-          </div>
-          <div class="draft-pick-card" id="draftPickCard">
-            <div class="dpc-label">On the Clock</div>
-            <div class="dpc-manager" id="draftPickManager">-</div>
-            <div class="dpc-round" id="draftPickLabel">-</div>
-          </div>
-        </div>
-
-        <div class="draft-clock-banner" id="draftClockBanner">
-          <span class="dcb-name" id="dcbManagerName">-</span>
-          <span class="dcb-sep">·</span>
-          <span class="dcb-timer" id="dcbTimer">-</span>
-        </div>
-
-        <div class="draft-order-strip-wrap">
-          <div class="draft-order-strip" id="draftOrderStrip"></div>
-        </div>
-
-        <div class="draft-content">
-          <div class="draft-left">
-            <div class="draft-toolbar">
-              <input type="text" id="draftSearch" placeholder="Search players…" class="pool-search" />
-              <select id="draftPosFilter" class="pool-select">
-                <option value="">All Positions</option>
-                <option value="G">Guards</option>
-                <option value="F">Forwards</option>
-                <option value="C">Centers</option>
-              </select>
-            </div>
-            <div class="pool-table-wrap">
-              <div class="pool-header">
-                <span class="ph-rank">#</span>
-                <span class="ph-player">Player</span>
-                <span class="ph-seed">Seed</span>
-                <span class="ph-stat sortable" data-col="points">PTS</span>
-                <span class="ph-stat sortable" data-col="rebounds">REB</span>
-                <span class="ph-stat sortable" data-col="assists">AST</span>
-                <span class="ph-stat sortable" data-col="steals">STL</span>
-                <span class="ph-stat sortable" data-col="blocks">BLK</span>
-                <span class="ph-stat sortable" data-col="fpts">FPTS</span>
-                <span class="ph-action">Action</span>
-              </div>
-              <div id="draftPlayerGrid"></div>
-            </div>
-          </div>
-          <div class="draft-feed-panel">
-            <h3 class="feed-title">Recent Picks</h3>
-            <div id="draftRecentPicks" class="recent-picks-list"></div>
-          </div>
-        </div>
-
-        <!-- Commissioner controls -->
-        <div class="draft-commissioner-controls commissioner-only">
-          <button id="startTimerBtnDraft" class="btn-sm btn-green">▶ Start</button>
-          <button id="pauseBtnDraft" class="btn-sm btn-ghost">Pause</button>
-          <button id="resetTimerBtnDraft" class="btn-sm btn-ghost">↺ Reset</button>
-          <div class="dcc-divider"></div>
-          <button id="undoPickBtn" class="btn-sm btn-ghost">↩ Undo</button>
-          <button id="autopickBtn" class="btn-sm btn-ghost">Autopick</button>
-          <button id="skipPickBtn" class="btn-sm btn-ghost">Skip</button>
-          <button id="resetDraftBtn" class="btn-sm btn-red">Reset Draft</button>
-        </div>
-      </section>
-
-      <!-- ── PLAYERS ────────────────────────────────── -->
+      <!-- ── DRAFT (Draft Room + Player Pool) ─────────── -->
       <section id="playersPage" class="page" style="display:none;">
-        <div class="page-header">
-          <h2>Player Pool</h2>
-          <span id="poolAvailCount" class="muted-badge">available</span>
+
+        <!-- Inner tab toggle -->
+        <div class="draft-inner-tabs">
+          <button class="dit-btn active" data-tab="room">Draft Room</button>
+          <button class="dit-btn" data-tab="pool">Player Pool</button>
         </div>
-        <!-- Card / List view toggle -->
-        <div class="pool-view-toggle">
-          <button class="view-btn active" id="poolListViewBtn">≡ List</button>
-          <button class="view-btn" id="poolCardViewBtn">⊞ Cards</button>
-        </div>
-        <div class="pool-toolbar">
-          <input type="text" id="poolSearch" placeholder="Search players…" class="pool-search" />
-          <select id="poolSeedFilter" class="pool-select">
-            <option value="">All Seeds</option>
-            <option value="1-4">Seeds 1–4</option>
-            <option value="5-8">Seeds 5–8</option>
-            <option value="9-12">Seeds 9–12</option>
-            <option value="13-16">Seeds 13–16</option>
-          </select>
-          <select id="poolSortSelect" class="pool-select">
-            <option value="fpts">Best Available (FPTS)</option>
-            <option value="points">Most Points</option>
-            <option value="rebounds">Most Rebounds</option>
-            <option value="assists">Most Assists</option>
-          </select>
-        </div>
-        <div class="pool-table-wrap">
-          <div class="pool-header">
-            <span class="ph-rank">#</span>
-            <span class="ph-player">Player</span>
-            <span class="ph-seed">Seed</span>
-            <span class="ph-stat sortable" data-col="points">PTS</span>
-            <span class="ph-stat sortable" data-col="rebounds">REB</span>
-            <span class="ph-stat sortable" data-col="assists">AST</span>
-            <span class="ph-stat sortable" data-col="steals">STL</span>
-            <span class="ph-stat sortable" data-col="blocks">BLK</span>
-            <span class="ph-stat sortable" data-col="fpts">FPTS</span>
-            <span class="ph-action">Status</span>
+
+        <!-- ── DRAFT ROOM TAB ── -->
+        <div id="draftRoomTab" class="dit-pane">
+          <div class="draft-hero">
+            <div class="draft-hero-left">
+              <h2 class="draft-hero-title">Snake Draft Room</h2>
+              <p class="draft-hero-sub" id="draftHeroSub">Waiting for draft to begin…</p>
+            </div>
+            <div class="draft-pick-card" id="draftPickCard">
+              <div class="dpc-label">On the Clock</div>
+              <div class="dpc-manager" id="draftPickManager">-</div>
+              <div class="dpc-round" id="draftPickLabel">-</div>
+            </div>
           </div>
-          <div id="playerPoolGrid"></div>
+
+          <div class="draft-clock-banner" id="draftClockBanner">
+            <span class="dcb-name" id="dcbManagerName">-</span>
+            <span class="dcb-sep">·</span>
+            <span class="dcb-timer" id="dcbTimer">-</span>
+          </div>
+
+          <div class="draft-order-strip-wrap">
+            <div class="draft-order-strip" id="draftOrderStrip"></div>
+          </div>
+
+          <div class="draft-content">
+            <div class="draft-left">
+              <div class="draft-toolbar">
+                <input type="text" id="draftSearch" placeholder="Search players…" class="pool-search" />
+                <select id="draftPosFilter" class="pool-select">
+                  <option value="">All Positions</option>
+                  <option value="G">Guards</option>
+                  <option value="F">Forwards</option>
+                  <option value="C">Centers</option>
+                </select>
+              </div>
+              <div class="pool-table-wrap">
+                <div class="pool-header" id="draftRoomPoolHeader">
+                  <span class="ph-rank">#</span>
+                  <span class="ph-player">Player</span>
+                  <span class="ph-seed">Seed</span>
+                  <span class="ph-stat sortable" data-col="points">PTS</span>
+                  <span class="ph-stat sortable" data-col="rebounds">REB</span>
+                  <span class="ph-stat sortable" data-col="assists">AST</span>
+                  <span class="ph-stat sortable" data-col="steals">STL</span>
+                  <span class="ph-stat sortable" data-col="blocks">BLK</span>
+                  <span class="ph-stat sortable" data-col="fpts">FPTS</span>
+                  <span class="ph-action">Action</span>
+                </div>
+                <div id="draftPlayerGrid"></div>
+              </div>
+            </div>
+            <div class="draft-feed-panel">
+              <h3 class="feed-title">Recent Picks</h3>
+              <div id="draftRecentPicks" class="recent-picks-list"></div>
+            </div>
+          </div>
+
+          <!-- Commissioner controls -->
+          <div class="draft-commissioner-controls commissioner-only">
+            <button id="startTimerBtnDraft" class="btn-sm btn-green">▶ Start</button>
+            <button id="pauseBtnDraft" class="btn-sm btn-ghost">Pause</button>
+            <button id="resetTimerBtnDraft" class="btn-sm btn-ghost">↺ Reset</button>
+            <div class="dcc-divider"></div>
+            <button id="undoPickBtn" class="btn-sm btn-ghost">↩ Undo</button>
+            <button id="autopickBtn" class="btn-sm btn-ghost">Autopick</button>
+            <button id="skipPickBtn" class="btn-sm btn-ghost">Skip</button>
+            <button id="resetDraftBtn" class="btn-sm btn-red">Reset Draft</button>
+          </div>
         </div>
-        <!-- Card grid view (shown when card toggle is active) -->
-        <div class="player-card-grid" id="playerCardGrid"></div>
+
+        <!-- ── PLAYER POOL TAB ── -->
+        <div id="playerPoolTab" class="dit-pane" style="display:none;">
+          <div class="page-header">
+            <h2>Player Pool</h2>
+            <span id="poolAvailCount" class="muted-badge">available</span>
+          </div>
+          <div class="pool-view-toggle">
+            <button class="view-btn active" id="poolListViewBtn">≡ List</button>
+            <button class="view-btn" id="poolCardViewBtn">⊞ Cards</button>
+          </div>
+          <div class="pool-toolbar">
+            <input type="text" id="poolSearch" placeholder="Search players…" class="pool-search" />
+            <select id="poolSeedFilter" class="pool-select">
+              <option value="">All Seeds</option>
+              <option value="1-4">Seeds 1–4</option>
+              <option value="5-8">Seeds 5–8</option>
+              <option value="9-12">Seeds 9–12</option>
+              <option value="13-16">Seeds 13–16</option>
+            </select>
+            <select id="poolSortSelect" class="pool-select">
+              <option value="fpts">Best Available (FPTS)</option>
+              <option value="points">Most Points</option>
+              <option value="rebounds">Most Rebounds</option>
+              <option value="assists">Most Assists</option>
+            </select>
+          </div>
+          <div class="pool-table-wrap">
+            <div class="pool-header" id="playerPoolHeader">
+              <span class="ph-rank">#</span>
+              <span class="ph-player">Player</span>
+              <span class="ph-seed">Seed</span>
+              <span class="ph-stat sortable" data-col="points">PTS</span>
+              <span class="ph-stat sortable" data-col="rebounds">REB</span>
+              <span class="ph-stat sortable" data-col="assists">AST</span>
+              <span class="ph-stat sortable" data-col="steals">STL</span>
+              <span class="ph-stat sortable" data-col="blocks">BLK</span>
+              <span class="ph-stat sortable" data-col="fpts">FPTS</span>
+              <span class="ph-action">Status</span>
+            </div>
+            <div id="playerPoolGrid"></div>
+          </div>
+          <div class="player-card-grid" id="playerCardGrid"></div>
+        </div>
+
       </section>
 
       <!-- ── TEAMS ─────────────────────────────────── -->
@@ -836,7 +843,7 @@
       <div class="rp-section">
         <div class="rp-section-title">Up Next</div>
         <div id="rpUpNext"><!-- rendered by JS --></div>
-        <button class="rp-view-all-btn" onclick="navigateTo('draft')">View Draft Order →</button>
+        <button class="rp-view-all-btn" onclick="navigateTo('players')">View Draft Order →</button>
       </div>
       <!-- STANDINGS -->
       <div class="rp-section">

@@ -924,6 +924,34 @@ input:focus, select:focus { outline: 2px solid rgba(79,143,247,0.45); outline-of
 /* ════════════════════════════════════════════════════════
    DRAFT PAGE
 ═══════════════════════════════════════════════════════════ */
+/* ── Draft inner tabs (Draft Room / Player Pool) ── */
+.draft-inner-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+}
+.dit-btn {
+  padding: 8px 20px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  letter-spacing: 0.3px;
+}
+.dit-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.dit-pane { width: 100%; }
+
 .draft-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
 .draft-hero-title { font-family: 'Barlow', sans-serif; font-size: 26px; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.3px; }
 .draft-hero-sub { color: var(--muted); font-size: 14px; }

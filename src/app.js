@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════════════════
-src/app.js   Vanilla JS, no frameworks, localStorage persistence
+   BRACKET HQ: app.js
+   Vanilla JS, no frameworks, localStorage persistence
 ══════════════════════════════════════════════════════════ */
 
 'use strict';
@@ -414,6 +415,9 @@ function navigateTo(page) {
   const navBtn = document.querySelector('.nav-btn[data-page="' + page + '"]');
   if (navBtn) navBtn.classList.add('active');
   if (page === 'players') {
+    try { renderDraftGrid(); } catch (e) { console.error('renderDraftGrid', e); }
+    try { renderDraftFeed(); } catch (e) { console.error('renderDraftFeed', e); }
+    try { renderDraftOrderStrip(); } catch (e) { console.error('renderDraftOrderStrip', e); }
     try { renderPlayerPool(); } catch (e) { console.error('renderPlayerPool', e); }
     try {
       const cg = document.getElementById('playerCardGrid');
@@ -888,13 +892,10 @@ function renderHome() {
       const sub = card.querySelector('.hc-sub');
       if (!sub) return;
       const pg = card.dataset.page;
-      if (pg === 'draft') {
+      if (pg === 'players') {
         if (isDraftComplete()) sub.textContent = 'Draft complete ✓';
         else if (state.currentPickIndex > 0) sub.textContent = 'Pick #' + (state.currentPickIndex + 1) + ' active';
-        else sub.textContent = 'Make your picks';
-      } else if (pg === 'players') {
-        const avail = (state.players || []).filter(p => !state.drafted[p.id]).length;
-        sub.textContent = avail + ' available';
+        else sub.textContent = 'Draft room & player pool';
       } else if (pg === 'standings') {
         if (me && myRank > 0) sub.textContent = myRank === 1 ? "You're leading! 🔥" : 'You\'re #' + myRank;
         else sub.textContent = 'Check the race';
@@ -2277,7 +2278,7 @@ function tutNext() {
     hideTutorial();
     saveState();
     render();
-    navigateTo('draft');
+    navigateTo('players');
     toast('League created! Time to draft.', 'success');
   }
 }
@@ -2423,25 +2424,25 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('draftSearch')?.addEventListener('input', renderDraftGrid);
   document.getElementById('draftPosFilter')?.addEventListener('change', renderDraftGrid);
 
-  // Draft pool header sorting
-  document.querySelector('#draftPage .pool-header')?.querySelectorAll('.sortable').forEach(th => {
+  // Draft room pool header sorting
+  document.getElementById('draftRoomPoolHeader')?.querySelectorAll('.sortable').forEach(th => {
     th.addEventListener('click', () => {
       const col = th.dataset.col;
       if (poolSortCol === col) poolSortDir = poolSortDir === 'desc' ? 'asc' : 'desc';
       else { poolSortCol = col; poolSortDir = 'desc'; }
-      document.querySelectorAll('#draftPage .pool-header .ph-stat').forEach(el => el.classList.remove('sort-active'));
+      document.querySelectorAll('#draftRoomPoolHeader .ph-stat').forEach(el => el.classList.remove('sort-active'));
       th.classList.add('sort-active');
       renderDraftGrid();
     });
   });
 
-  // Players page pool header sorting (independent sort state)
-  document.querySelector('#playersPage .pool-header')?.querySelectorAll('.sortable').forEach(th => {
+  // Player pool tab sorting (independent sort state)
+  document.getElementById('playerPoolHeader')?.querySelectorAll('.sortable').forEach(th => {
     th.addEventListener('click', () => {
       const col = th.dataset.col;
       if (playerPoolSortCol === col) playerPoolSortDir = playerPoolSortDir === 'desc' ? 'asc' : 'desc';
       else { playerPoolSortCol = col; playerPoolSortDir = 'desc'; }
-      document.querySelectorAll('#playersPage .pool-header .ph-stat').forEach(el => el.classList.remove('sort-active'));
+      document.querySelectorAll('#playerPoolHeader .ph-stat').forEach(el => el.classList.remove('sort-active'));
       th.classList.add('sort-active');
       renderPlayerPool();
     });
@@ -2757,14 +2758,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('mcbProfileBtn')?.addEventListener('click', () => navigateTo('profile'));
 
   // On the clock banner → jump to draft
-  document.getElementById('otcDraftBtn')?.addEventListener('click', () => navigateTo('draft'));
+  document.getElementById('otcDraftBtn')?.addEventListener('click', () => navigateTo('players'));
 
   // Profile share / invite
   document.getElementById('profileShareBtn')?.addEventListener('click', shareInviteLink);
 
   // Profile quick actions
   document.getElementById('profileGoSettings')?.addEventListener('click', () => navigateTo('settings'));
-  document.getElementById('profileGoDraft')?.addEventListener('click', () => navigateTo('draft'));
+  document.getElementById('profileGoDraft')?.addEventListener('click', () => navigateTo('players'));
   document.getElementById('profileGoStandings')?.addEventListener('click', () => navigateTo('standings'));
 
   // Notifications settings
@@ -2784,6 +2785,7 @@ document.addEventListener('DOMContentLoaded', () => {
   syncNotifUI();
 
   // ── NEW FEATURE HOOKS ─────────────────────────────────────
+  initDraftInnerTabs();
   initCardViewToggle();
   initSwipeDismiss();
   initFABDraft();
@@ -2921,7 +2923,7 @@ async function showOTCNotification(pick) {
 // Listen for SW telling us to jump to draft (notification tap when tab was open)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data && e.data.type === 'OTC_FOCUS_DRAFT') navigateTo('draft');
+    if (e.data && e.data.type === 'OTC_FOCUS_DRAFT') navigateTo('players');
   });
 }
 
@@ -2984,12 +2986,34 @@ function updateOTCBanner(pick) {
 }
 
 // ══════════════════════════════════════════════════════════
+// 🏀 DRAFT INNER TABS: Draft Room / Player Pool
+// ══════════════════════════════════════════════════════════
+function initDraftInnerTabs() {
+  document.querySelectorAll('.dit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.dit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('draftRoomTab').style.display = tab === 'room' ? '' : 'none';
+      document.getElementById('playerPoolTab').style.display = tab === 'pool' ? '' : 'none';
+      if (tab === 'pool') {
+        try { renderPlayerPool(); } catch (e) {}
+      } else {
+        try { renderDraftGrid(); } catch (e) {}
+        try { renderDraftFeed(); } catch (e) {}
+        try { renderDraftOrderStrip(); } catch (e) {}
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
 // 🗃️ CARD VIEW TOGGLE: list vs card grid for player pool
 // ══════════════════════════════════════════════════════════
 function initCardViewToggle() {
   const listBtn = document.getElementById('poolListViewBtn');
   const cardBtn = document.getElementById('poolCardViewBtn');
-  const tableWrap = document.querySelector('#playersPage .pool-table-wrap');
+  const tableWrap = document.querySelector('#playerPoolTab .pool-table-wrap');
   const cardGrid = document.getElementById('playerCardGrid');
   if (!listBtn || !cardBtn || !tableWrap || !cardGrid) return;
 
@@ -3331,7 +3355,7 @@ function initFABDraft() {
   if (!fab) return;
 
   function syncFab() {
-    const onDraft = document.getElementById('draftPage')?.classList.contains('active-page');
+    const onDraft = document.getElementById('playersPage')?.classList.contains('active-page');
     if (onDraft && isCommissioner()) {
       fab.style.display = 'flex';
     } else {
