@@ -197,6 +197,7 @@ let expandedTeams = new Set();
 
 // ── PERSISTENCE ───────────────────────────────────────────
 function saveState() {
+  state.lastSaved = Date.now();
   try {
     localStorage.setItem('mmfantasy-state', JSON.stringify(state));
     if (state.leagueId) {
@@ -247,17 +248,16 @@ function updateLeaguesIndex() {
   } catch (e) { console.error('updateLeaguesIndex', e); }
 }
 
+// ── SESSION ───────────────────────────────────────────────
 function getSession() {
   try {
     const raw = localStorage.getItem('mmfantasy-session');
     return raw ? JSON.parse(raw) : null;
   } catch (e) { return null; }
 }
-
 function setSession(name, email) {
-  localStorage.setItem('mmfantasy-session', JSON.stringify({ name, email }));
+  try { localStorage.setItem('mmfantasy-session', JSON.stringify({ name, email })); } catch (e) {}
 }
-
 function clearSession() {
   localStorage.removeItem('mmfantasy-session');
   localStorage.removeItem('mmfantasy-state');
@@ -288,10 +288,9 @@ function isDraftComplete() {
 }
 
 function isCommissioner() {
-  const s = getSession();
-  if (!s) return false;
   if (!state.commissioner) return false;
-  return s.name === state.commissioner;
+  const s = getSession();
+  return s ? s.name === state.commissioner : false;
 }
 
 // ── FPTS ─────────────────────────────────────────────────
@@ -466,15 +465,71 @@ function showSignup() {
   document.getElementById('mainApp').style.display = 'none';
 }
 
-function showSplash() {
+function showSplash(fromInit) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('signupScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'none';
-  const splash = document.getElementById('splashScreen');
-  splash.style.display = 'flex';
+
+  var splash = document.getElementById('splashScreen');
+  var intro  = document.getElementById('mmIntro');
+
+  // Reset reveal & opacity so entrances always replay cleanly
+  splash.classList.remove('reveal');
+  splash.style.opacity   = '0';
+  splash.style.transition = '';
+  splash.style.display   = 'flex';
+
   renderSavedLeagues();
-  // Auto-open join modal if an invite link was used
   checkInviteURL();
+
+  if (fromInit && intro) {
+    // ── Bracket intro → crossfade → element entrances ────────
+    // Reset any leftover intro state from a previous run
+    intro.classList.remove('playing');
+    intro.style.opacity    = '';
+    intro.style.transition = '';
+    void intro.offsetWidth; // flush pending styles
+
+    // Show intro and kick off animations
+    intro.style.display = 'flex';
+    void intro.offsetWidth; // reflow so animations start clean
+    intro.classList.add('playing');
+
+    // 2.2s = court fully drawn, baskets in, flash done
+    setTimeout(function() {
+      // Crisp crossfade
+      intro.style.transition  = 'opacity 0.8s ease';
+      intro.style.opacity     = '0';
+      splash.style.transition = 'opacity 0.8s ease';
+      splash.style.opacity    = '1';
+
+      setTimeout(function() {
+        // Cleanup intro
+        intro.style.display    = 'none';
+        intro.style.opacity    = '';
+        intro.style.transition = '';
+        intro.classList.remove('playing');
+        splash.style.transition = '';
+
+        // Fire staggered element entrances now that splash is fully visible
+        splash.classList.add('reveal');
+      }, 850);
+    }, 2200);
+
+  } else {
+    // ── No intro: fade splash in and immediately reveal elements ─
+    if (intro) { intro.style.display = 'none'; }
+
+    // Double-rAF ensures opacity:0 is painted before we start the transition
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        splash.style.transition = 'opacity 0.3s ease';
+        splash.style.opacity    = '1';
+        splash.classList.add('reveal');
+        setTimeout(function() { splash.style.transition = ''; }, 350);
+      });
+    });
+  }
 }
 
 function enterLeague() {
@@ -533,99 +588,108 @@ function resumeTimerIfRunning() {
 
 // ── AUTH ──────────────────────────────────────────────────
 function handleLogin() {
-  const email = (document.getElementById('loginEmail').value || '').trim();
+  const email    = (document.getElementById('loginEmail').value || '').trim();
   const password = (document.getElementById('loginPassword').value || '');
-  const errEl = document.getElementById('loginError');
+  const errEl    = document.getElementById('loginError');
   errEl.style.display = 'none';
 
-  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email.'; errEl.style.display = 'block'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Enter a valid email.'; errEl.style.display = 'block'; return; }
+  if (password.length < 6)  { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
 
-  // Preserve existing display name if the user already has a session for this email,
-  // otherwise derive a reasonable fallback from the email prefix.
   const existingSession = getSession();
   const name = (existingSession && existingSession.email === email && existingSession.name)
     ? existingSession.name
     : (email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Player');
   setSession(name, email);
-
   const loginScreen = document.getElementById('loginScreen');
   loginScreen.style.transition = 'opacity 0.4s ease';
   loginScreen.style.opacity = '0';
   setTimeout(() => {
-    loginScreen.style.opacity = '';
-    loginScreen.style.transition = '';
-    loginScreen.style.display = 'none';
-    if (loadState() && state.leagueId) {
-      enterLeague();
-    } else {
-      showSplash();
-    }
+    loginScreen.style.opacity = ''; loginScreen.style.transition = ''; loginScreen.style.display = 'none';
+    if (loadState() && state.leagueId) { enterLeague(); } else { showSplash(true); }
   }, 420);
 }
 
 function handleSignup() {
   const username = (document.getElementById('signupUsername').value || '').trim();
-  const email = (document.getElementById('signupEmail').value || '').trim();
+  const email    = (document.getElementById('signupEmail').value || '').trim();
   const password = (document.getElementById('signupPassword').value || '');
-  const confirm = (document.getElementById('signupConfirm').value || '');
-  const errEl = document.getElementById('signupError');
+  const confirm  = (document.getElementById('signupConfirm').value || '');
+  const errEl    = document.getElementById('signupError');
   errEl.style.display = 'none';
 
-  if (!username) { errEl.textContent = 'Display name required.'; errEl.style.display = 'block'; return; }
+  if (!username)                     { errEl.textContent = 'Display name required.'; errEl.style.display = 'block'; return; }
   if (containsBlockedTerm(username)) { errEl.textContent = 'Please choose a different display name.'; errEl.style.display = 'block'; return; }
-  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email.'; errEl.style.display = 'block'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
-  if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  if (!email.includes('@'))          { errEl.textContent = 'Enter a valid email.'; errEl.style.display = 'block'; return; }
+  if (password.length < 6)          { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  if (password !== confirm)          { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
 
   setSession(username, email);
   const signupScreen = document.getElementById('signupScreen');
   signupScreen.style.transition = 'opacity 0.4s ease';
   signupScreen.style.opacity = '0';
   setTimeout(() => {
-    signupScreen.style.opacity = '';
-    signupScreen.style.transition = '';
-    signupScreen.style.display = 'none';
-    showSplash();
+    signupScreen.style.opacity = ''; signupScreen.style.transition = ''; signupScreen.style.display = 'none';
+    showSplash(true);
   }, 420);
 }
 
 // ── SPLASH ────────────────────────────────────────────────
+function _applyLeagueState(saved) {
+  state = Object.assign({}, defaultState, saved);
+  state.scoring = Object.assign({}, defaultState.scoring, saved.scoring || {});
+  state.scoring.weights = Object.assign({}, defaultState.scoring.weights, (saved.scoring || {}).weights || {});
+  state.secondChance = Object.assign({}, defaultState.secondChance, saved.secondChance || {});
+  if (!Array.isArray(state.players) || state.players.length === 0) state.players = (window.MM_PLAYERS || []).slice();
+}
+
+function _leagueCardHTML(l) {
+  const code = l.leagueCode || l.leagueId || '--';
+  return '<div class="saved-league-card" data-code="' + esc(code) + '">' +
+    '<div class="slc-left"><h4>' + esc(l.leagueName || 'League') + '</h4>' +
+    '<p>' + esc(l.commissioner || '') + ' · ' + (l.managers ? l.managers.length : 0) + ' managers · Code: ' + esc(code) + '</p></div>' +
+    '<div class="slc-right"><div class="slc-pct">' + (l.draftPct || 0) + '%</div><div class="slc-pct-label">drafted</div>' +
+    '<div><button class="enter-btn">Enter →</button></div></div></div>';
+}
+
+function _attachLeagueCardListeners(container) {
+  container.querySelectorAll('.saved-league-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      _loadAndEnterLeague(card.dataset.code);
+    });
+  });
+}
+
+function _loadAndEnterLeague(code) {
+  if (!code) return;
+  _loadAndEnterLeagueLocal(code);
+}
+
+function _loadAndEnterLeagueLocal(code) {
+  try {
+    const raw = localStorage.getItem('mmfantasy-league-' + code) ||
+                localStorage.getItem('mmfantasy-league-league_' + code);
+    if (raw) {
+      _applyLeagueState(JSON.parse(raw));
+      saveState();
+      enterLeague();
+    }
+  } catch (e) { console.error('loadLocal', e); }
+}
+
 function renderSavedLeagues() {
   const container = document.getElementById('savedLeaguesList');
   if (!container) return;
   try {
     const raw = localStorage.getItem('mmfantasy-leagues');
     const leagues = raw ? JSON.parse(raw) : [];
-    if (leagues.length === 0) {
+    if (!leagues.length) {
       container.innerHTML = '<p class="no-leagues">No leagues yet. Create or join one above.</p>';
       return;
     }
-    container.innerHTML = leagues.sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0)).map(l => {
-      return '<div class="saved-league-card" data-id="' + l.leagueId + '">' +
-        '<div class="slc-left"><h4>' + esc(l.leagueName || 'League') + '</h4>' +
-        '<p>' + esc(l.commissioner || '') + ' · ' + (l.managers ? l.managers.length : 0) + ' managers · Code: ' + esc(l.leagueCode || '--') + '</p></div>' +
-        '<div class="slc-right"><div class="slc-pct">' + (l.draftPct || 0) + '%</div><div class="slc-pct-label">drafted</div>' +
-        '<div><button class="enter-btn">Enter →</button></div></div></div>';
-    }).join('');
-    container.querySelectorAll('.saved-league-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.dataset.id;
-        try {
-          const lsRaw = localStorage.getItem('mmfantasy-league-' + id);
-          if (lsRaw) {
-            const saved = JSON.parse(lsRaw);
-            state = Object.assign({}, defaultState, saved);
-            state.scoring = Object.assign({}, defaultState.scoring, saved.scoring || {});
-            state.scoring.weights = Object.assign({}, defaultState.scoring.weights, (saved.scoring || {}).weights || {});
-            state.secondChance = Object.assign({}, defaultState.secondChance, saved.secondChance || {});
-            if (!Array.isArray(state.players) || state.players.length === 0) state.players = (window.MM_PLAYERS || []).slice();
-            saveState();
-            enterLeague();
-          }
-        } catch (e) { console.error('enterExisting', e); }
-      });
-    });
+    const sorted = leagues.slice().sort(function(a, b) { return (b.lastActive || 0) - (a.lastActive || 0); });
+    container.innerHTML = sorted.map(_leagueCardHTML).join('');
+    _attachLeagueCardListeners(container);
   } catch (e) { container.innerHTML = '<p class="no-leagues">Could not load leagues.</p>'; }
 }
 
@@ -636,7 +700,7 @@ function createLeague() {
   state.leagueCode = Math.random().toString(36).toUpperCase().slice(2, 8);
   const session = getSession();
   state.commissioner = session ? session.name : 'Commissioner';
-  state.managers = session ? [session.name] : ['Commissioner'];
+  state.managers     = session ? [session.name] : ['Commissioner'];
   state.leagueName = 'My League';
   try { localStorage.setItem('mmfantasy-code-' + state.leagueCode, state.leagueId); } catch (e) { }
   addActivity((state.commissioner || 'Commissioner') + ' created the league');
@@ -723,20 +787,16 @@ function handleJoin() {
   const errEl = document.getElementById('joinError');
   errEl.style.display = 'none';
   if (code.length !== 6) { errEl.textContent = 'Code must be 6 characters.'; errEl.style.display = 'block'; return; }
+
   const leagueId = localStorage.getItem('mmfantasy-code-' + code);
-  if (!leagueId) { errEl.textContent = 'League not found. Check the code and try again.'; errEl.style.display = 'block'; return; }
-  const raw = localStorage.getItem('mmfantasy-league-' + leagueId);
-  if (!raw) { errEl.textContent = 'League data not found.'; errEl.style.display = 'block'; return; }
+  const raw = leagueId ? localStorage.getItem('mmfantasy-league-' + leagueId) : null;
+  if (!raw) { errEl.textContent = 'League not found. Check the code and try again.'; errEl.style.display = 'block'; return; }
   let saved;
   try { saved = JSON.parse(raw); } catch (e) { errEl.textContent = 'League data is corrupted.'; errEl.style.display = 'block'; return; }
   const session = getSession();
   const name = session ? session.name : 'Player';
   if (!saved.managers.includes(name)) saved.managers.push(name);
-  state = Object.assign({}, defaultState, saved);
-  state.scoring = Object.assign({}, defaultState.scoring, saved.scoring || {});
-  state.scoring.weights = Object.assign({}, defaultState.scoring.weights, (saved.scoring || {}).weights || {});
-  state.secondChance = Object.assign({}, defaultState.secondChance, saved.secondChance || {});
-  if (!Array.isArray(state.players) || state.players.length === 0) state.players = (window.MM_PLAYERS || []).slice();
+  _applyLeagueState(saved);
   saveState();
   document.getElementById('joinModal').style.display = 'none';
   enterLeague();
@@ -2660,17 +2720,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })();
 
-  // Check session on load
+  // ── BOOT ──────────────────────────────────────────────────
   const session = getSession();
   if (session) {
-    if (loadState() && state.leagueId) {
-      enterLeague();
-    } else {
-      showSplash();
-    }
-  } else {
-    showLogin();
-  }
+    if (loadState() && state.leagueId) { enterLeague(); }
+    else { showSplash(true); }
+  } else { showLogin(); }
 
   // Chat
   document.getElementById('chatSendBtn')?.addEventListener('click', sendChatMessage);

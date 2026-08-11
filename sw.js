@@ -3,7 +3,7 @@
    Cache-first for static assets, network-first for data
 ══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'brackethq-v37';
+const CACHE_NAME = 'brackethq-v50';
 const STATIC_ASSETS = [
   './',
   './index.html',

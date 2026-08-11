@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow:wght@600;700;800;900&family=Barlow+Condensed:wght@700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow:wght@300;600;700;800;900&family=Barlow+Condensed:wght@300;400;700;800;900&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="src/styles.css" />
 </head>
@@ -85,10 +85,53 @@
     </div>
   </div>
 
+  <!-- ── Basketball court intro overlay — lives OUTSIDE splashScreen so
+       splash opacity:0 during crossfade doesn't hide the animation ── -->
+  <div id="mmIntro" aria-hidden="true" style="display:none;">
+    <!-- Court SVG — same elements as nav icon, scaled to full screen portrait -->
+    <svg class="mm-bsv" viewBox="0 0 390 760" preserveAspectRatio="xMidYMid meet" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Court outer boundary -->
+      <path class="mm-path mm-court-outline" pathLength="100"
+            d="M 55,85 L 335,85 L 335,675 L 55,675 Z"/>
+      <!-- Half-court line -->
+      <path class="mm-path mm-court-half" pathLength="100"
+            d="M 55,380 L 335,380"/>
+      <!-- Center circle -->
+      <circle class="mm-path mm-court-circle" pathLength="100"
+              cx="195" cy="380" r="50"/>
+      <!-- Top key box -->
+      <path class="mm-path mm-court-key mm-court-key-t" pathLength="100"
+            d="M 125,85 L 125,219 L 265,219 L 265,85"/>
+      <!-- Bottom key box -->
+      <path class="mm-path mm-court-key mm-court-key-b" pathLength="100"
+            d="M 125,675 L 125,541 L 265,541 L 265,675"/>
+      <!-- Top 3-point arc (corners + arc, curves toward center) -->
+      <path class="mm-path mm-court-3pt mm-court-3pt-t" pathLength="100"
+            d="M 109,85 L 109,219 A 95,95 0 0 0 281,219 L 281,85"/>
+      <!-- Bottom 3-point arc -->
+      <path class="mm-path mm-court-3pt mm-court-3pt-b" pathLength="100"
+            d="M 109,675 L 109,541 A 95,95 0 0 1 281,541 L 281,675"/>
+      <!-- Baskets (filled dots, same as nav icon) -->
+      <circle class="mm-court-basket" cx="195" cy="125" r="11"/>
+      <circle class="mm-court-basket" cx="195" cy="635" r="11"/>
+    </svg>
+    <!-- Central glow -->
+    <div class="mm-glow"></div>
+    <!-- Logo + title -->
+    <div class="mm-content">
+      <img class="mm-intro-logo" src="logo.png" alt="Bracket HQ" width="120" height="120" />
+      <div class="mm-intro-title">BRACKET HQ</div>
+      <div class="mm-intro-sub">Draft. Compete. Win.</div>
+    </div>
+    <!-- Flash burst -->
+    <div class="mm-flash"></div>
+  </div>
+
   <!-- ═══════════════════════════════════════════
      SPLASH SCREEN
 ════════════════════════════════════════════ -->
   <div id="splashScreen" class="screen" style="display:none;">
+
     <div class="splash-hero">
       <div class="splash-logo">
         <div class="splash-flash"></div>
@@ -153,9 +196,9 @@
             <!-- Right key -->
             <rect x="18" y="7.5" width="5" height="9"/>
             <!-- Left basket -->
-            <circle cx="2.5" cy="12" r="0.8" fill="currentColor"/>
+            <circle cx="2.5" cy="12" r="1.5" fill="currentColor"/>
             <!-- Right basket -->
-            <circle cx="21.5" cy="12" r="0.8" fill="currentColor"/>
+            <circle cx="21.5" cy="12" r="1.5" fill="currentColor"/>
             <!-- Left 3pt arc -->
             <path d="M6 6.5 A6.3 6.3 0 0 1 6 17.5"/>
             <!-- Right 3pt arc -->
