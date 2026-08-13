@@ -1,4 +1,4 @@
-// Bracket HQ — Player Pool
+// Tipoff Fantasy: Player Pool
 // 120+ players across 64 tournament teams
 window.MM_PLAYERS = [
   // ── EAST REGION ──────────────────────────────────────────────
@@ -199,5 +199,73 @@ window.MM_PLAYERS = [
   { id: 'p126', name: 'Borja Fernandez', college: 'Montana State', position: 'F', seed: 15, region: 'West', stats: { points: 13.8, rebounds: 6.9, assists: 1.7, steals: 0.6, blocks: 0.7 } },
   // 16 Longwood
   { id: 'p127', name: 'Justin Hill', college: 'Longwood', position: 'G', seed: 16, region: 'West', stats: { points: 19.2, rebounds: 3.8, assists: 4.6, steals: 1.7, blocks: 0.2 } },
-  { id: 'p128', name: 'Leslie Nkereuwem', college: 'Longwood', position: 'C', seed: 16, region: 'West', stats: { points: 12.9, rebounds: 8.7, assists: 1.1, steals: 0.5, blocks: 2.1 } }
+  { id: 'p128', name: 'Leslie Nkereuwem', college: 'Longwood', position: 'C', seed: 16, region: 'West', stats: { points: 12.9, rebounds: 8.7, assists: 1.1, steals: 0.5, blocks: 2.1 } },
+
+  // ── MAUI INVITATIONAL ────────────────────────────────────
+  // 1 Arizona
+  { id: 'p201', name: 'KJ Lewis', college: 'Arizona', position: 'G', seed: 1, region: 'Maui', stats: { points: 17.2, rebounds: 4.1, assists: 3.8, steals: 1.3, blocks: 0.3 } },
+  { id: 'p202', name: 'Henri Veesaar', college: 'Arizona', position: 'C', seed: 1, region: 'Maui', stats: { points: 13.5, rebounds: 8.4, assists: 1.2, steals: 0.5, blocks: 2.2 } },
+  { id: 'p203', name: 'Caleb Foster', college: 'Arizona', position: 'F', seed: 1, region: 'Maui', stats: { points: 14.8, rebounds: 5.2, assists: 2.9, steals: 1.1, blocks: 0.6 } },
+  // 2 BYU
+  { id: 'p204', name: 'Egor Demin', college: 'BYU', position: 'G', seed: 2, region: 'Maui', stats: { points: 19.1, rebounds: 4.8, assists: 5.2, steals: 1.4, blocks: 0.3 } },
+  { id: 'p205', name: 'Fousseyni Traore', college: 'BYU', position: 'C', seed: 2, region: 'Maui', stats: { points: 15.3, rebounds: 9.2, assists: 1.5, steals: 0.8, blocks: 1.4 } },
+  { id: 'p206', name: 'Richie Saunders', college: 'BYU', position: 'G', seed: 2, region: 'Maui', stats: { points: 14.6, rebounds: 5.1, assists: 2.8, steals: 1.2, blocks: 0.4 } },
+  // 3 Clemson
+  { id: 'p207', name: 'Chase Hunter', college: 'Clemson', position: 'G', seed: 3, region: 'Maui', stats: { points: 16.8, rebounds: 3.9, assists: 4.4, steals: 1.6, blocks: 0.3 } },
+  { id: 'p208', name: 'PJ Hall', college: 'Clemson', position: 'F', seed: 3, region: 'Maui', stats: { points: 17.4, rebounds: 6.8, assists: 2.1, steals: 0.9, blocks: 0.8 } },
+  { id: 'p209', name: 'Ian Schieffelin', college: 'Clemson', position: 'F', seed: 3, region: 'Maui', stats: { points: 11.2, rebounds: 7.5, assists: 1.8, steals: 0.7, blocks: 1.1 } },
+  // 4 Colorado State
+  { id: 'p210', name: 'Nique Clifford', college: 'Colorado State', position: 'F', seed: 4, region: 'Maui', stats: { points: 18.3, rebounds: 8.6, assists: 3.5, steals: 1.8, blocks: 0.9 } },
+  { id: 'p211', name: 'Isaiah Stevens', college: 'Colorado State', position: 'G', seed: 4, region: 'Maui', stats: { points: 15.7, rebounds: 4.2, assists: 6.1, steals: 2.0, blocks: 0.2 } },
+  { id: 'p212', name: 'Joel Scott', college: 'Colorado State', position: 'C', seed: 4, region: 'Maui', stats: { points: 10.8, rebounds: 8.1, assists: 1.4, steals: 0.6, blocks: 1.5 } },
+  // 5 Ole Miss
+  { id: 'p213', name: 'Matthew Murrell', college: 'Ole Miss', position: 'G', seed: 5, region: 'Maui', stats: { points: 17.2, rebounds: 3.9, assists: 2.8, steals: 1.1, blocks: 0.2 } },
+  { id: 'p214', name: 'Jaemyn Brakefield', college: 'Ole Miss', position: 'F', seed: 5, region: 'Maui', stats: { points: 12.4, rebounds: 7.2, assists: 1.5, steals: 0.6, blocks: 0.8 } },
+  { id: 'p215', name: 'Allen Flanigan', college: 'Ole Miss', position: 'F', seed: 5, region: 'Maui', stats: { points: 13.5, rebounds: 6.4, assists: 2.1, steals: 0.9, blocks: 0.7 } },
+  // 6 Providence
+  { id: 'p216', name: 'Bryce Hopkins', college: 'Providence', position: 'F', seed: 6, region: 'Maui', stats: { points: 16.7, rebounds: 8.1, assists: 2.3, steals: 1.0, blocks: 0.6 } },
+  { id: 'p217', name: 'Devin Carter', college: 'Providence', position: 'G', seed: 6, region: 'Maui', stats: { points: 18.4, rebounds: 4.3, assists: 3.7, steals: 1.9, blocks: 0.3 } },
+  { id: 'p218', name: 'Noah Locke', college: 'Providence', position: 'G', seed: 6, region: 'Maui', stats: { points: 13.2, rebounds: 3.1, assists: 2.6, steals: 0.9, blocks: 0.2 } },
+  // 7 VCU
+  { id: 'p219', name: 'Joe Bamisile', college: 'VCU', position: 'G', seed: 7, region: 'Maui', stats: { points: 18.8, rebounds: 4.5, assists: 4.1, steals: 1.5, blocks: 0.4 } },
+  { id: 'p220', name: 'Adrian Baldwin Jr', college: 'VCU', position: 'G', seed: 7, region: 'Maui', stats: { points: 15.2, rebounds: 4.8, assists: 5.3, steals: 2.3, blocks: 0.2 } },
+  { id: 'p221', name: 'Levi Stockard III', college: 'VCU', position: 'F', seed: 7, region: 'Maui', stats: { points: 12.1, rebounds: 6.9, assists: 1.4, steals: 0.7, blocks: 0.9 } },
+  // 8 Washington
+  { id: 'p222', name: 'Great Osobor', college: 'Washington', position: 'F', seed: 8, region: 'Maui', stats: { points: 20.4, rebounds: 9.3, assists: 2.1, steals: 1.0, blocks: 0.8 } },
+  { id: 'p223', name: 'Zoom Diallo', college: 'Washington', position: 'G', seed: 8, region: 'Maui', stats: { points: 14.5, rebounds: 5.1, assists: 3.4, steals: 1.4, blocks: 0.5 } },
+  { id: 'p224', name: 'Keion Brooks Jr', college: 'Washington', position: 'F', seed: 8, region: 'Maui', stats: { points: 16.3, rebounds: 6.2, assists: 2.7, steals: 1.1, blocks: 0.6 } },
+
+  // ── BATTLE 4 ATLANTIS ────────────────────────────────────
+  // 1 Marquette
+  { id: 'p225', name: 'Tyler Kolek', college: 'Marquette', position: 'G', seed: 1, region: 'Atlantis', stats: { points: 16.2, rebounds: 4.8, assists: 7.4, steals: 1.8, blocks: 0.2 } },
+  { id: 'p226', name: 'Kam Jones', college: 'Marquette', position: 'G', seed: 1, region: 'Atlantis', stats: { points: 18.8, rebounds: 4.1, assists: 4.6, steals: 1.5, blocks: 0.3 } },
+  { id: 'p227', name: 'Oso Ighodaro', college: 'Marquette', position: 'C', seed: 1, region: 'Atlantis', stats: { points: 13.1, rebounds: 7.6, assists: 2.4, steals: 0.9, blocks: 1.8 } },
+  // 2 Penn State
+  { id: 'p228', name: 'Nick Kern Jr', college: 'Penn State', position: 'G', seed: 2, region: 'Atlantis', stats: { points: 17.3, rebounds: 5.4, assists: 3.8, steals: 1.4, blocks: 0.4 } },
+  { id: 'p229', name: 'Kebba Njie', college: 'Penn State', position: 'C', seed: 2, region: 'Atlantis', stats: { points: 12.5, rebounds: 8.9, assists: 1.2, steals: 0.6, blocks: 2.0 } },
+  { id: 'p230', name: 'Ace Baldwin Jr', college: 'Penn State', position: 'G', seed: 2, region: 'Atlantis', stats: { points: 15.8, rebounds: 4.2, assists: 5.9, steals: 1.9, blocks: 0.2 } },
+  // 3 Texas A&M
+  { id: 'p231', name: 'Wade Taylor IV', college: 'Texas A&M', position: 'G', seed: 3, region: 'Atlantis', stats: { points: 18.1, rebounds: 3.2, assists: 5.0, steals: 1.6, blocks: 0.2 } },
+  { id: 'p232', name: 'Henry Coleman III', college: 'Texas A&M', position: 'F', seed: 3, region: 'Atlantis', stats: { points: 11.2, rebounds: 7.9, assists: 1.4, steals: 0.7, blocks: 1.1 } },
+  { id: 'p233', name: 'Andersson Garcia', college: 'Texas A&M', position: 'F', seed: 3, region: 'Atlantis', stats: { points: 12.6, rebounds: 8.4, assists: 1.8, steals: 1.2, blocks: 0.9 } },
+  // 4 Memphis
+  { id: 'p234', name: 'Milos Uzan', college: 'Memphis', position: 'G', seed: 4, region: 'Atlantis', stats: { points: 17.5, rebounds: 4.3, assists: 5.7, steals: 1.6, blocks: 0.3 } },
+  { id: 'p235', name: 'Nick Jourdain', college: 'Memphis', position: 'F', seed: 4, region: 'Atlantis', stats: { points: 14.2, rebounds: 6.8, assists: 2.1, steals: 1.0, blocks: 0.8 } },
+  { id: 'p236', name: 'Jaykwon Walton', college: 'Memphis', position: 'G', seed: 4, region: 'Atlantis', stats: { points: 13.8, rebounds: 3.7, assists: 3.4, steals: 1.3, blocks: 0.2 } },
+  // 5 Mississippi State
+  { id: 'p237', name: 'Josh Hubbard', college: 'Mississippi State', position: 'G', seed: 5, region: 'Atlantis', stats: { points: 19.2, rebounds: 3.6, assists: 3.2, steals: 1.4, blocks: 0.3 } },
+  { id: 'p238', name: 'Tolu Arokodare', college: 'Mississippi State', position: 'C', seed: 5, region: 'Atlantis', stats: { points: 13.4, rebounds: 8.2, assists: 1.3, steals: 0.5, blocks: 1.7 } },
+  { id: 'p239', name: 'RJ Luis Jr', college: 'Mississippi State', position: 'F', seed: 5, region: 'Atlantis', stats: { points: 15.1, rebounds: 7.1, assists: 2.0, steals: 0.8, blocks: 0.9 } },
+  // 6 Virginia
+  { id: 'p240', name: 'Isaac McKneely', college: 'Virginia', position: 'G', seed: 6, region: 'Atlantis', stats: { points: 15.6, rebounds: 3.5, assists: 2.9, steals: 1.1, blocks: 0.3 } },
+  { id: 'p241', name: 'Blake Buchanan', college: 'Virginia', position: 'C', seed: 6, region: 'Atlantis', stats: { points: 11.8, rebounds: 7.4, assists: 1.6, steals: 0.5, blocks: 1.5 } },
+  { id: 'p242', name: 'Ryan Dunn', college: 'Virginia', position: 'F', seed: 6, region: 'Atlantis', stats: { points: 13.9, rebounds: 5.8, assists: 2.5, steals: 1.4, blocks: 1.2 } },
+  // 7 Wake Forest
+  { id: 'p243', name: 'Hunter Sallis', college: 'Wake Forest', position: 'G', seed: 7, region: 'Atlantis', stats: { points: 18.0, rebounds: 4.1, assists: 4.8, steals: 1.7, blocks: 0.4 } },
+  { id: 'p244', name: 'Efton Reid III', college: 'Wake Forest', position: 'C', seed: 7, region: 'Atlantis', stats: { points: 12.3, rebounds: 8.5, assists: 1.4, steals: 0.5, blocks: 2.1 } },
+  { id: 'p245', name: 'Boopie Miller', college: 'Wake Forest', position: 'G', seed: 7, region: 'Atlantis', stats: { points: 14.7, rebounds: 3.2, assists: 4.2, steals: 1.3, blocks: 0.2 } },
+  // 8 Xavier
+  { id: 'p246', name: 'Dayvion McKnight', college: 'Xavier', position: 'G', seed: 8, region: 'Atlantis', stats: { points: 16.4, rebounds: 5.1, assists: 5.8, steals: 2.0, blocks: 0.2 } },
+  { id: 'p247', name: 'Sean Stewart', college: 'Xavier', position: 'F', seed: 8, region: 'Atlantis', stats: { points: 13.2, rebounds: 8.4, assists: 1.5, steals: 0.8, blocks: 1.6 } },
+  { id: 'p248', name: 'Quincy Olivari', college: 'Xavier', position: 'G', seed: 8, region: 'Atlantis', stats: { points: 17.9, rebounds: 4.2, assists: 3.6, steals: 1.4, blocks: 0.3 } }
 ];

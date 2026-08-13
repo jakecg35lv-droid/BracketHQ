@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   BRACKET HQ: app.js
+   TIPOFF FANTASY: app.js
    Vanilla JS, no frameworks, localStorage persistence
 ══════════════════════════════════════════════════════════ */
 
@@ -176,12 +176,13 @@ const defaultState = {
     weights: { points: 1, rebounds: 1.2, assists: 1.5, steals: 2, blocks: 2 }
   },
   players: [],
-  secondChance: { enabled: false, windowOpen: false, triggered: false, claims: {} },
   activityFeed: [],
   trades: [],
   waivers: [],
   prevRankings: [],
-  baselineStats: {}
+  baselineStats: {},
+  selectedTournament: null,
+  maxManagers: 8
 };
 
 let state = Object.assign({}, defaultState);
@@ -215,7 +216,6 @@ function loadState() {
       state = Object.assign({}, defaultState, parsed);
       state.scoring = Object.assign({}, defaultState.scoring, parsed.scoring || {});
       state.scoring.weights = Object.assign({}, defaultState.scoring.weights, (parsed.scoring || {}).weights || {});
-      state.secondChance = Object.assign({}, defaultState.secondChance, parsed.secondChance || {});
       if (!Array.isArray(state.players) || state.players.length === 0) {
         state.players = (window.MM_PLAYERS || []).slice();
       }
@@ -290,7 +290,11 @@ function isDraftComplete() {
 function isCommissioner() {
   if (!state.commissioner) return false;
   const s = getSession();
-  return s ? s.name === state.commissioner : false;
+  if (!s) return false;
+  if (s.name === state.commissioner) return true;
+  // Fallback: match by email (handles name changes / stale localStorage)
+  if (state.commissionerEmail && s.email && s.email.toLowerCase() === state.commissionerEmail.toLowerCase()) return true;
+  return false;
 }
 
 // ── FPTS ─────────────────────────────────────────────────
@@ -314,12 +318,6 @@ function managerFPTS(managerName) {
       const p = (state.players || []).find(x => x.id === pid);
       if (p) total += calcFPTS(p);
     }
-  });
-  // add SC claims
-  const claims = (state.secondChance.claims || {})[managerName] || [];
-  claims.forEach(pid => {
-    const p = (state.players || []).find(x => x.id === pid);
-    if (p) total += calcFPTS(p) * 0.5;
   });
   return Math.round(total * 10) / 10;
 }
@@ -352,17 +350,12 @@ function managerProjectedFPTS(managerName) {
 }
 
 function managerRoster(managerName) {
-  const main = Object.entries(state.drafted)
+  return Object.entries(state.drafted)
     .filter(([, d]) => d.manager === managerName)
     .map(([pid, d]) => {
       const p = (state.players || []).find(x => x.id === pid);
-      return p ? Object.assign({}, p, { _pick: d, _sc: false }) : null;
+      return p ? Object.assign({}, p, { _pick: d }) : null;
     }).filter(Boolean);
-  const sc = ((state.secondChance.claims || {})[managerName] || []).map(pid => {
-    const p = (state.players || []).find(x => x.id === pid);
-    return p ? Object.assign({}, p, { _pick: null, _sc: true }) : null;
-  }).filter(Boolean);
-  return main.concat(sc);
 }
 
 // ── ACTIVITY FEED ─────────────────────────────────────────
@@ -444,7 +437,26 @@ function navigateTo(page) {
 }
 
 // ── SCREEN MANAGEMENT ─────────────────────────────────────
+function showLanding() {
+  var landing = document.getElementById('landingScreen');
+  landing.classList.remove('reveal');
+  landing.style.display = 'flex';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('signupScreen').style.display = 'none';
+  document.getElementById('splashScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+  var mmIntro = document.getElementById('mmIntro');
+  if (mmIntro) mmIntro.style.display = 'none';
+  // Double-rAF so the opacity:0 base state is painted before animation fires
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      landing.classList.add('reveal');
+    });
+  });
+}
+
 function showLogin() {
+  document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('signupScreen').style.display = 'none';
   document.getElementById('splashScreen').style.display = 'none';
@@ -459,6 +471,7 @@ function showLogin() {
 }
 
 function showSignup() {
+  document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('signupScreen').style.display = 'flex';
   document.getElementById('splashScreen').style.display = 'none';
@@ -466,6 +479,7 @@ function showSignup() {
 }
 
 function showSplash(fromInit) {
+  document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('signupScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'none';
@@ -533,6 +547,7 @@ function showSplash(fromInit) {
 }
 
 function enterLeague() {
+  document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('signupScreen').style.display = 'none';
 
@@ -554,6 +569,7 @@ function enterLeague() {
       setTimeout(() => {
         leoEl.style.display = 'none';
         document.getElementById('mainApp').style.display = 'flex';
+        if (state.selectedTournament) generateBracketData(state.selectedTournament);
         render();
         navigateTo('home');
         updateCommissionerVisibility();
@@ -561,6 +577,7 @@ function enterLeague() {
       }, 1150);
     } else {
       document.getElementById('mainApp').style.display = 'flex';
+      if (state.selectedTournament) generateBracketData(state.selectedTournament);
       render();
       navigateTo('home');
       updateCommissionerVisibility();
@@ -639,17 +656,17 @@ function _applyLeagueState(saved) {
   state = Object.assign({}, defaultState, saved);
   state.scoring = Object.assign({}, defaultState.scoring, saved.scoring || {});
   state.scoring.weights = Object.assign({}, defaultState.scoring.weights, (saved.scoring || {}).weights || {});
-  state.secondChance = Object.assign({}, defaultState.secondChance, saved.secondChance || {});
   if (!Array.isArray(state.players) || state.players.length === 0) state.players = (window.MM_PLAYERS || []).slice();
 }
 
 function _leagueCardHTML(l) {
-  const code = l.leagueCode || l.leagueId || '--';
-  return '<div class="saved-league-card" data-code="' + esc(code) + '">' +
+  const displayCode = l.leagueCode || l.leagueId || '--';
+  const lookupId    = l.leagueId   || l.leagueCode || '--';
+  return '<div class="saved-league-card" data-code="' + esc(lookupId) + '">' +
     '<div class="slc-left"><h4>' + esc(l.leagueName || 'League') + '</h4>' +
-    '<p>' + esc(l.commissioner || '') + ' · ' + (l.managers ? l.managers.length : 0) + ' managers · Code: ' + esc(code) + '</p></div>' +
+    '<p>' + esc(l.commissioner || '') + ' · ' + (l.managers ? l.managers.length : 0) + ' managers · Code: ' + esc(displayCode) + '</p></div>' +
     '<div class="slc-right"><div class="slc-pct">' + (l.draftPct || 0) + '%</div><div class="slc-pct-label">drafted</div>' +
-    '<div><button class="enter-btn">Enter →</button></div></div></div>';
+    '<div><button class="enter-btn">Enter</button></div></div></div>';
 }
 
 function _attachLeagueCardListeners(container) {
@@ -699,8 +716,9 @@ function createLeague() {
   state.leagueId = 'league_' + Date.now();
   state.leagueCode = Math.random().toString(36).toUpperCase().slice(2, 8);
   const session = getSession();
-  state.commissioner = session ? session.name : 'Commissioner';
-  state.managers     = session ? [session.name] : ['Commissioner'];
+  state.commissioner      = session ? session.name  : 'Commissioner';
+  state.commissionerEmail = session ? session.email : '';
+  state.managers          = session ? [session.name] : ['Commissioner'];
   state.leagueName = 'My League';
   try { localStorage.setItem('mmfantasy-code-' + state.leagueCode, state.leagueId); } catch (e) { }
   addActivity((state.commissioner || 'Commissioner') + ' created the league');
@@ -715,12 +733,12 @@ function getInviteURL(code) {
 function shareInviteLink() {
   if (!state.leagueCode) { toast('No league code yet. Create a league first.', 'error'); return; }
   const url = getInviteURL(state.leagueCode);
-  const text = 'Join my Bracket HQ league "' + (state.leagueName || 'My League') + '"! Code: ' + state.leagueCode;
+  const text = 'Join my Tipoff Fantasy league "' + (state.leagueName || 'My League') + '"! Code: ' + state.leagueCode;
 
   // Try native share sheet (works great on iPhone)
   if (navigator.share) {
     // Only include URL when it's a real http/https address (file:// URLs are rejected by the share API)
-    const shareData = { title: 'Bracket HQ Invite', text };
+    const shareData = { title: 'Tipoff Fantasy Invite', text };
     if (url.startsWith('http')) shareData.url = url;
     navigator.share(shareData)
       .then(() => toast('Invite sent!', 'success'))
@@ -795,6 +813,12 @@ function handleJoin() {
   try { saved = JSON.parse(raw); } catch (e) { errEl.textContent = 'League data is corrupted.'; errEl.style.display = 'block'; return; }
   const session = getSession();
   const name = session ? session.name : 'Player';
+  const max = saved.maxManagers || 8;
+  if (!saved.managers.includes(name) && saved.managers.length >= max) {
+    errEl.textContent = 'This league is full (' + max + '/' + max + ' managers).';
+    errEl.style.display = 'block';
+    return;
+  }
   if (!saved.managers.includes(name)) saved.managers.push(name);
   _applyLeagueState(saved);
   saveState();
@@ -857,9 +881,6 @@ function renderHome() {
       timerEl.textContent = formatTimer(state.pickTimerSeconds);
     }
   }
-
-  const scBanner = document.getElementById('scBanner');
-  if (scBanner) scBanner.style.display = state.secondChance.windowOpen ? 'block' : 'none';
 
   // Stat tiles: My Rank, My FPTS, Picks Left, Leader
   const session = getSession();
@@ -983,6 +1004,8 @@ function renderHome() {
       }
     });
   } catch (e) { /* ignore */ }
+
+  renderTournamentBanner();
 }
 
 // ── AVATAR / PROFILE UTILS ────────────────────────────────
@@ -1142,7 +1165,39 @@ function renderProfile() {
 }
 
 // ── DRAFT ─────────────────────────────────────────────────
+function updateDraftTabLock() {
+  const locked = !state.selectedTournament;
+  document.querySelectorAll('.dit-btn').forEach(function(btn) {
+    btn.classList.toggle('locked', locked);
+  });
+}
+
 function renderDraft() {
+  updateDraftTabLock();
+  const tab = document.getElementById('draftRoomTab');
+
+  // Gate: no tournament selected -- show an overlay, never wipe the tab innerHTML
+  if (!state.selectedTournament) {
+    let overlay = document.getElementById('draftLockOverlay');
+    if (tab && !overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'draftLockOverlay';
+      overlay.className = 'draft-lock-overlay';
+      tab.appendChild(overlay);
+    }
+    if (overlay) {
+      overlay.innerHTML = getLockHtml('the draft');
+      overlay.style.display = 'flex';
+      const btn = overlay.querySelector('#plSelectTournBtn');
+      if (btn) btn.addEventListener('click', openTournamentSelector);
+    }
+    return;
+  }
+
+  // Hide the overlay when a tournament is active
+  const overlay = document.getElementById('draftLockOverlay');
+  if (overlay) overlay.style.display = 'none';
+
   const pick = currentPick();
   const complete = isDraftComplete();
 
@@ -1219,20 +1274,24 @@ function renderDraftGrid() {
 
 function renderRecentPicks() {
   const el = document.getElementById('draftRecentPicks');
+  const strip = el ? el.closest('.draft-recent-strip') : null;
   if (!el) return;
   const order = buildDraftOrder();
-  const recentIdx = Math.max(0, state.currentPickIndex - 10);
+  const recentIdx = Math.max(0, state.currentPickIndex - 20);
   const recent = order.slice(recentIdx, state.currentPickIndex).reverse();
-  if (recent.length === 0) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No picks yet.</p>'; return; }
+  if (strip) strip.style.display = '';
+  if (recent.length === 0) { el.innerHTML = '<span class="rp-empty">No picks yet</span>'; return; }
   el.innerHTML = recent.map(o => {
     const player = Object.entries(state.drafted).find(([, d]) => d.label === o.label && d.manager === o.manager);
     if (!player) return '';
     const p = (state.players || []).find(x => x.id === player[0]);
     if (!p) return '';
-    return '<div class="rp-item">' +
-      '<span class="rp-num">#' + o.pickNumber + '</span>' +
-      getSchoolLogoHTML(p.college, 24) +
-      '<div class="rp-info"><div class="rp-player">' + esc(p.name) + '</div><div class="rp-manager">' + esc(o.manager) + '</div></div>' +
+    return '<div class="rp-chip">' +
+      '<span class="rp-chip-num">#' + o.pickNumber + '</span>' +
+      '<div class="rp-chip-info">' +
+        '<div class="rp-chip-player">' + esc(p.name) + '</div>' +
+        '<div class="rp-chip-mgr">' + esc(o.manager) + '</div>' +
+      '</div>' +
       '</div>';
   }).filter(Boolean).join('');
 }
@@ -1312,8 +1371,6 @@ function confirmDraftPick() {
 
     render();
 
-    // Check SC trigger
-    checkSCTrigger();
     if (isDraftComplete()) {
       toast('Draft complete!', 'success');
       setTimeout(launchConfetti, 200);
@@ -1407,18 +1464,14 @@ function renderPlayerPool() {
   }).join('');
 
   grid.querySelectorAll('.pool-row').forEach(row => {
-    row.addEventListener('click', (e) => {
-      if (e.target.classList.contains('sc-claim-btn')) {
-        claimSecondChance(e.target.dataset.pid);
-      } else {
-        showPlayerDetail(row.dataset.pid, row, true);
-      }
+    row.addEventListener('click', () => {
+      showPlayerDetail(row.dataset.pid, row);
     });
   });
 }
 
 // ── PLAYER DETAIL CARD ────────────────────────────────────
-function showPlayerDetail(playerId, rowEl, showSC) {
+function showPlayerDetail(playerId, rowEl) {
   const p = (state.players || []).find(x => x.id === playerId);
   if (!p) return;
   if (rowEl) { rowEl.classList.add('pool-row--flash'); setTimeout(() => rowEl.classList.remove('pool-row--flash'), 700); }
@@ -1432,7 +1485,6 @@ function showPlayerDetail(playerId, rowEl, showSC) {
   const colEl = document.getElementById('pdcCollege');
   const statsEl = document.getElementById('pdcStats');
   const statusEl = document.getElementById('pdcDraftStatus');
-  const scBtn = document.getElementById('pdcSCBtn');
   if (!overlay) return;
 
   if (logoEl) logoEl.innerHTML = getSchoolLogoHTML(p.college, 60);
@@ -1462,12 +1514,6 @@ function showPlayerDetail(playerId, rowEl, showSC) {
       statusEl.textContent = '✓ Available';
     }
   }
-  if (scBtn) {
-    scBtn.style.display = (showSC && state.secondChance.windowOpen && !dInfo) ? 'block' : 'none';
-    const claimBtn = document.getElementById('claimSCBtn');
-    if (claimBtn) { claimBtn.dataset.pid = p.id; }
-  }
-
   // reset animation
   const card = document.getElementById('pdcCard');
   if (card) { card.style.animation = 'none'; card.offsetHeight; card.style.animation = ''; }
@@ -1477,50 +1523,6 @@ function showPlayerDetail(playerId, rowEl, showSC) {
 function closePDC() {
   const overlay = document.getElementById('pdcOverlay');
   if (overlay) overlay.style.display = 'none';
-}
-
-// ── SECOND CHANCE ─────────────────────────────────────────
-function claimSecondChance(playerId) {
-  const session = getSession();
-  if (!session) return;
-  const manager = session.name;
-  if (!state.secondChance.windowOpen) { toast('Second Chance window is not open', 'error'); return; }
-  const p = (state.players || []).find(x => x.id === playerId);
-  if (!p) return;
-  if (state.drafted[playerId]) { toast('Player is already drafted', 'error'); return; }
-  if (!state.secondChance.claims) state.secondChance.claims = {};
-  if (!state.secondChance.claims[manager]) state.secondChance.claims[manager] = [];
-  if (state.secondChance.claims[manager].includes(playerId)) { toast('You already claimed this player', 'error'); return; }
-  // Check no other manager has already claimed this player
-  const alreadyClaimed = Object.entries(state.secondChance.claims).some(([mgr, pids]) => mgr !== manager && pids.includes(playerId));
-  if (alreadyClaimed) { toast('Another manager already claimed this player', 'error'); return; }
-  state.secondChance.claims[manager].push(playerId);
-  addActivity(manager + ' claimed ' + p.name + ' (Second Chance)');
-  saveState();
-  closePDC();
-  renderPlayerPool();
-  toast('Claimed ' + p.name + '!', 'success');
-}
-
-function checkSCTrigger() {
-  if (!state.secondChance.enabled || state.secondChance.triggered) return;
-  const data = getBracketState();
-  if (!data) return;
-  // Check if all 32 R64 winners filled
-  const regions = window.MM_BRACKET_DATA ? window.MM_BRACKET_DATA.regions : [];
-  let allFilled = true;
-  regions.forEach(reg => {
-    const winners = data.regions[reg.name] ? data.regions[reg.name][0] : [];
-    if (!winners || winners.length < reg.matchups.length) allFilled = false;
-  });
-  if (allFilled) {
-    state.secondChance.windowOpen = true;
-    state.secondChance.triggered = true;
-    addActivity('Second Chance pickup window is now open!');
-    saveState();
-    toast('Second Chance window is now open!', 'success');
-    render();
-  }
 }
 
 // ── TEAMS ─────────────────────────────────────────────────
@@ -1592,6 +1594,15 @@ function renderTeams() {
 function renderStandings() {
   const list = document.getElementById('standingsList');
   if (!list) return;
+
+  // Gate: no tournament selected
+  if (!state.selectedTournament) {
+    list.innerHTML = getLockHtml('standings');
+    const btn = list.querySelector('#plSelectTournBtn');
+    if (btn) btn.addEventListener('click', openTournamentSelector);
+    return;
+  }
+
   const session = getSession();
   const currentUser = session ? session.name : null;
   if (state.managers.length === 0) { list.innerHTML = '<p style="color:var(--muted);padding:16px;">No managers yet.</p>'; return; }
@@ -1825,10 +1836,10 @@ function getBracketState() {
   try {
     const raw = localStorage.getItem('mmfantasy-bracket-' + state.leagueId);
     if (raw) return JSON.parse(raw);
-    // Init empty bracket state
+    const numRounds = (window.MM_BRACKET_DATA || {}).numRounds || 4;
     const init = { regions: {}, finalFour: [null, null], championship: null };
     (window.MM_BRACKET_DATA || { regions: [] }).regions.forEach(reg => {
-      init.regions[reg.name] = [[], [], [], []];
+      init.regions[reg.name] = Array(numRounds).fill(null).map(() => []);
     });
     return init;
   } catch (e) { return null; }
@@ -1839,25 +1850,510 @@ function saveBracketState(data) {
   localStorage.setItem('mmfantasy-bracket-' + state.leagueId, JSON.stringify(data));
 }
 
+// ── TOURNAMENT DATA ────────────────────────────────────────
+// bracketFormat: 'single8' | 'single16' | 'ncaa64'
+// seededTeams: [{seed, name}] - source of truth for bracket generation
+// canSelect: false = teams not yet announced (show Teams TBD)
+// roundNames: display labels for each round in single-bracket formats
+const TOURNAMENTS = {
+  inSeason: [
+    {
+      id: 'maui-2026',
+      name: 'Maui Invitational',
+      subtitle: 'Southwest Maui Invitational',
+      location: 'Lahaina Civic Center, Maui, HI',
+      dates: 'Nov 23–25, 2026',
+      startMs: new Date('2026-11-23').getTime(),
+      bracketFormat: 'single8',
+      roundNames: ['Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: true,
+      teams: ['Arizona', 'BYU', 'Clemson', 'Colorado State', 'Ole Miss', 'Providence', 'VCU', 'Washington'],
+      seededTeams: [
+        { seed: 1, name: 'Arizona' },
+        { seed: 2, name: 'BYU' },
+        { seed: 3, name: 'Clemson' },
+        { seed: 4, name: 'Colorado State' },
+        { seed: 5, name: 'Ole Miss' },
+        { seed: 6, name: 'Providence' },
+        { seed: 7, name: 'VCU' },
+        { seed: 8, name: 'Washington' }
+      ]
+    },
+    {
+      id: 'b4a-2026',
+      name: 'Battle 4 Atlantis',
+      subtitle: '15th Anniversary Edition',
+      location: 'Imperial Arena, Bahamas',
+      dates: 'Nov 25–27, 2026',
+      startMs: new Date('2026-11-25').getTime(),
+      bracketFormat: 'single8',
+      roundNames: ['Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: true,
+      teams: ['Penn State', 'Marquette', 'Memphis', 'Mississippi State', 'Texas A&M', 'Virginia', 'Wake Forest', 'Xavier'],
+      seededTeams: [
+        { seed: 1, name: 'Marquette' },
+        { seed: 2, name: 'Penn State' },
+        { seed: 3, name: 'Texas A&M' },
+        { seed: 4, name: 'Memphis' },
+        { seed: 5, name: 'Mississippi State' },
+        { seed: 6, name: 'Virginia' },
+        { seed: 7, name: 'Wake Forest' },
+        { seed: 8, name: 'Xavier' }
+      ]
+    },
+    {
+      id: 'etsc-2026',
+      name: 'ESPN Thanksgiving Showcase',
+      subtitle: 'ESPN Wide World of Sports',
+      location: 'Kissimmee, FL',
+      dates: 'Nov 23–25, 2026',
+      startMs: new Date('2026-11-23').getTime(),
+      bracketFormat: 'single8',
+      roundNames: ['Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: false,
+      teams: ['Akron', 'Wright State', 'App State', 'Belmont'],
+      seededTeams: []
+    },
+    {
+      id: 'jimmyv-2026',
+      name: 'Jimmy V Classic',
+      subtitle: 'Presented by Modelo · 32nd Year',
+      location: 'Madison Square Garden, New York',
+      dates: 'Dec 8, 2026',
+      startMs: new Date('2026-12-08').getTime(),
+      bracketFormat: 'single8',
+      roundNames: ['Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: false, comingSoon: true,
+      teams: [], seededTeams: []
+    },
+    {
+      id: 'emerald-2026',
+      name: 'Emerald Coast Classic',
+      subtitle: '',
+      location: 'Niceville, FL',
+      dates: 'Nov 27–28, 2026',
+      startMs: new Date('2026-11-27').getTime(),
+      bracketFormat: 'single8',
+      roundNames: ['Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: false, comingSoon: true,
+      teams: [], seededTeams: []
+    },
+    {
+      id: 'lvclassic-2026',
+      name: 'Las Vegas Classic',
+      subtitle: 'Resorts World Las Vegas',
+      location: 'Las Vegas, NV',
+      dates: 'Nov 27–28, 2026',
+      startMs: new Date('2026-11-27').getTime(),
+      bracketFormat: 'single8',
+      roundNames: ['Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: false, comingSoon: true,
+      teams: [], seededTeams: []
+    }
+  ],
+  conference: [
+    { id: 'big12-2027', name: 'Big 12 Tournament', subtitle: '16-team field', location: 'T-Mobile Center, Kansas City, MO', dates: 'Mar 9–14, 2027', startMs: new Date('2027-03-09').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'acc-2027', name: 'ACC Tournament', subtitle: '16-team field', location: 'Gainbridge Fieldhouse, Indianapolis, IN', dates: 'Mar 10–14, 2027', startMs: new Date('2027-03-10').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'big10-2027', name: 'Big Ten Tournament', subtitle: '18-team field', location: 'Gainbridge Fieldhouse, Indianapolis, IN', dates: 'Mar 10–14, 2027', startMs: new Date('2027-03-10').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'sec-2027', name: 'SEC Tournament', subtitle: '16-team field', location: 'Bridgestone Arena, Nashville, TN', dates: 'Mar 10–14, 2027', startMs: new Date('2027-03-10').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'bigeast-2027', name: 'Big East Tournament', subtitle: '11-team field', location: 'Madison Square Garden, New York', dates: 'Mar 10–13, 2027', startMs: new Date('2027-03-10').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'american-2027', name: 'American Tournament', subtitle: '', location: 'Dickies Arena, Fort Worth, TX', dates: 'Mar 2027', startMs: new Date('2027-03-06').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'a10-2027', name: 'Atlantic 10 Tournament', subtitle: '', location: 'Barclays Center, Brooklyn, NY', dates: 'Mar 2027', startMs: new Date('2027-03-06').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] },
+    { id: 'mwc-2027', name: 'Mountain West Tournament', subtitle: '', location: 'Thomas & Mack Center, Las Vegas', dates: 'Mar 2027', startMs: new Date('2027-03-06').getTime(), bracketFormat: 'single16', roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'], canSelect: false, comingSoon: true, teams: [], seededTeams: [] }
+  ],
+  postseason: [
+    {
+      id: 'ncaa-2027',
+      name: 'NCAA Tournament',
+      subtitle: '64-team field · 4 regions',
+      location: 'Championship: Ford Field, Detroit, MI',
+      dates: 'Mar 16 – Apr 5, 2027',
+      startMs: new Date('2027-03-16').getTime(),
+      bracketFormat: 'ncaa64',
+      roundNames: ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite 8'],
+      canSelect: true,
+      comingSoon: true,
+      highlight: true,
+      note: 'Selection Sunday: Mar 14',
+      teams: [], seededTeams: []
+    },
+    {
+      id: 'nit-2027',
+      name: 'NIT',
+      subtitle: '32-team field',
+      location: 'Various sites (Final: MSG, New York)',
+      dates: 'Mar 2027',
+      startMs: new Date('2027-03-16').getTime(),
+      bracketFormat: 'single16',
+      roundNames: ['Round of 32', 'Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: false, comingSoon: true,
+      teams: [], seededTeams: []
+    },
+    {
+      id: 'crown-2027',
+      name: 'College Basketball Crown',
+      subtitle: 'Third-tier postseason',
+      location: 'Various sites',
+      dates: 'Mar 2027',
+      startMs: new Date('2027-03-16').getTime(),
+      bracketFormat: 'single16',
+      roundNames: ['Round of 16', 'Quarterfinals', 'Semifinals', 'Championship'],
+      canSelect: false, comingSoon: true,
+      teams: [], seededTeams: []
+    }
+  ]
+};
+
+// ── TOURNAMENT SELECTION ENGINE ────────────────────────────
+
+function findTournamentById(id) {
+  const all = [
+    ...TOURNAMENTS.inSeason,
+    ...TOURNAMENTS.conference,
+    ...TOURNAMENTS.postseason
+  ];
+  return all.find(t => t.id === id) || null;
+}
+
+// Builds window.MM_BRACKET_DATA from a tournament object.
+// For ncaa64 the static bracket.js file is used as-is.
+// For single8/single16 we generate dynamically from seededTeams.
+function generateBracketData(tournament) {
+  if (!tournament) return;
+
+  if (tournament.bracketFormat === 'ncaa64') {
+    // bracket.js already loaded as window.MM_BRACKET_DATA - keep it,
+    // but tag it with format metadata for the renderer.
+    if (window.MM_BRACKET_DATA) {
+      window.MM_BRACKET_DATA.format    = 'ncaa64';
+      window.MM_BRACKET_DATA.numRounds = 4;
+    }
+    return;
+  }
+
+  const sorted = (tournament.seededTeams || []).slice().sort((a, b) => a.seed - b.seed);
+  const n      = sorted.length;
+  const numRounds = (tournament.roundNames || []).length;
+
+  let matchups = [];
+  if (n === 8) {
+    // Standard 8-seed bracket: 1v8, 4v5, 2v7, 3v6
+    matchups = [
+      { top: sorted[0], bot: sorted[7] },
+      { top: sorted[3], bot: sorted[4] },
+      { top: sorted[1], bot: sorted[6] },
+      { top: sorted[2], bot: sorted[5] }
+    ];
+  } else if (n >= 16) {
+    // Standard 16-seed bracket
+    matchups = [
+      { top: sorted[0],  bot: sorted[15] },
+      { top: sorted[7],  bot: sorted[8]  },
+      { top: sorted[4],  bot: sorted[11] },
+      { top: sorted[3],  bot: sorted[12] },
+      { top: sorted[5],  bot: sorted[10] },
+      { top: sorted[2],  bot: sorted[13] },
+      { top: sorted[6],  bot: sorted[9]  },
+      { top: sorted[1],  bot: sorted[14] }
+    ];
+  }
+
+  window.MM_BRACKET_DATA = {
+    format:     tournament.bracketFormat,
+    numRounds:  numRounds,
+    roundNames: tournament.roundNames || [],
+    regions: [{ name: tournament.name, matchups: matchups }],
+    finalFour:    null,
+    championship: null
+  };
+}
+
+// Commissioner calls this to pick a tournament.
+// Clears existing bracket state, rebuilds MM_BRACKET_DATA, saves + re-renders.
+function setSelectedTournament(tournament) {
+  state.selectedTournament = tournament;
+
+  // Wipe old bracket picks: new tournament = fresh bracket
+  if (state.leagueId) {
+    localStorage.removeItem('mmfantasy-bracket-' + state.leagueId);
+  }
+
+  generateBracketData(tournament);
+
+  // Filter player pool to only the tournament's teams (use full pool for ncaa64)
+  if (tournament.bracketFormat !== 'ncaa64' && tournament.seededTeams && tournament.seededTeams.length) {
+    const teamNames = tournament.seededTeams.map(function(t) { return t.name; });
+    state.players = (window.MM_PLAYERS || []).filter(function(p) { return teamNames.includes(p.college); });
+  } else {
+    state.players = (window.MM_PLAYERS || []).slice();
+  }
+
+  saveState();
+  addActivity('Tournament selected: ' + tournament.name);
+
+  updateDraftTabLock();
+
+  // Close selector if open
+  const modal = document.getElementById('tournamentSelectModal');
+  if (modal) modal.style.display = 'none';
+
+  // Refresh UI
+  updateBracketTabs();
+  renderTournamentBanner();
+  try { renderHome(); } catch (e) {}
+  try { renderBracket(); } catch (e) {}
+  try { renderDraft(); } catch (e) {}
+  try { renderStandings(); } catch (e) {}
+}
+
+// Rebuild bracket region tabs to match the selected tournament format.
+function updateBracketTabs() {
+  const container = document.querySelector('.bracket-tabs');
+  if (!container) return;
+
+  const fmt = state.selectedTournament ? state.selectedTournament.bracketFormat : 'ncaa64';
+
+  if (fmt === 'ncaa64') {
+    container.innerHTML =
+      '<button class="bracket-tab active" data-region="East">East</button>' +
+      '<button class="bracket-tab" data-region="South">South</button>' +
+      '<button class="bracket-tab" data-region="Midwest">Midwest</button>' +
+      '<button class="bracket-tab" data-region="West">West</button>' +
+      '<button class="bracket-tab bracket-tab-ff" data-region="FinalFour">Final Four</button>';
+    container.style.display = '';
+  } else {
+    // Single bracket: no region tabs needed
+    container.innerHTML = '';
+    container.style.display = 'none';
+  }
+
+  // Re-wire tab click events
+  container.querySelectorAll('.bracket-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      container.querySelectorAll('.bracket-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderBracket();
+    });
+  });
+}
+
+// Lock screen shown on Draft / Bracket / Standings when no tournament is selected.
+function getLockHtml(page) {
+  const isCom = isCommissioner();
+  const lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+  const trophySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+  if (isCom) {
+    return '<div class="page-lock">' +
+      '<div class="pl-icon">' + trophySvg + '</div>' +
+      '<div class="pl-title">No Tournament Selected</div>' +
+      '<div class="pl-sub">Choose a tournament before accessing ' + page + '.<br>Once set, your bracket and draft will be configured automatically.</div>' +
+      '<button class="btn-primary pl-btn" id="plSelectTournBtn">Choose Tournament</button>' +
+      '</div>';
+  }
+  return '<div class="page-lock">' +
+    '<div class="pl-icon">' + lockSvg + '</div>' +
+    '<div class="pl-title">Waiting on Commissioner</div>' +
+    '<div class="pl-sub">Your commissioner hasn\'t selected a tournament yet.<br>' + page + ' will unlock once they do.</div>' +
+    '</div>';
+}
+
+function openTournamentSelector() {
+  const modal = document.getElementById('tournamentSelectModal');
+  if (!modal) return;
+  const body  = document.getElementById('tsmBody');
+  if (!body)  return;
+
+  function sectionHtml(label, items) {
+    let html = '<div class="tsm-section"><div class="tsm-section-label">' + label + '</div>';
+    items.forEach(function(t) {
+      const selected   = state.selectedTournament && state.selectedTournament.id === t.id;
+      const selectable = t.canSelect !== false;
+      html += '<div class="tsm-item' +
+        (selected   ? ' tsm-item--selected'  : '') +
+        (!selectable ? ' tsm-item--disabled' : '') + '">';
+      html += '<div class="tsm-item-main">';
+      html += '<div class="tsm-item-name">' + esc(t.name) + '</div>';
+      html += '<div class="tsm-item-meta">' + esc(t.dates) + (t.subtitle ? ' · ' + esc(t.subtitle) : '') + '</div>';
+      html += '</div>';
+      if (selected) {
+        html += '<span class="tsm-check">&#10003; Selected</span>';
+      } else if (t.comingSoon) {
+        html += '<span class="tsm-coming-soon">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+          ' Soon</span>';
+      } else if (selectable) {
+        html += '<button class="tsm-select-btn btn-sm btn-primary" data-tid="' + esc(t.id) + '">Select</button>';
+      } else {
+        html += '<span class="tsm-tbd">Teams TBD</span>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  body.innerHTML =
+    sectionHtml('In-Season Tournaments', TOURNAMENTS.inSeason) +
+    sectionHtml('Conference Tournaments', TOURNAMENTS.conference) +
+    sectionHtml('Postseason', TOURNAMENTS.postseason);
+
+  body.querySelectorAll('.tsm-select-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const t = findTournamentById(btn.dataset.tid);
+      if (t) setSelectedTournament(t);
+    });
+  });
+
+  modal.style.display = 'flex';
+}
+
+function renderTournamentBanner() {
+  const banner = document.getElementById('tournamentBanner');
+  if (!banner) return;
+  const t     = state.selectedTournament;
+  const isCom = isCommissioner();
+  const away  = t ? _tournDaysAway(t.startMs) : null;
+
+  if (!t) {
+    banner.className = 'tourn-banner tourn-banner--empty';
+    if (isCom) {
+      banner.innerHTML =
+        '<div class="tb-empty-text"><strong>No tournament selected.</strong> Your league can\'t draft until you choose one.</div>' +
+        '<button class="tb-action-btn" id="tbSelectBtn">Choose Tournament</button>';
+    } else {
+      banner.innerHTML =
+        '<div class="tb-empty-text">Waiting for the commissioner to select a tournament...</div>';
+    }
+  } else {
+    banner.className = 'tourn-banner tourn-banner--active';
+    banner.innerHTML =
+      '<div class="tb-left">' +
+        '<div class="tb-name">' + esc(t.name) + '</div>' +
+        '<div class="tb-meta">' + esc(t.dates) + (t.location ? ' · ' + esc(t.location) : '') + '</div>' +
+      '</div>' +
+      '<div class="tb-right">' +
+        (away ? '<span class="tb-countdown">' + away + '</span>' : '<span class="tb-countdown tb-live">Underway</span>') +
+        (isCom ? '<button class="tb-action-btn tb-change" id="tbSelectBtn">Change</button>' : '') +
+      '</div>';
+  }
+
+  const btn = banner.querySelector('#tbSelectBtn');
+  if (btn) btn.addEventListener('click', openTournamentSelector);
+}
+
+function _tournDaysAway(ms) {
+  const now = Date.now();
+  const diff = ms - now;
+  if (diff <= 0) return null;
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days < 30) return days + 'd away';
+  const months = Math.round(days / 30.4);
+  return months + 'mo away';
+}
+
+function renderTournaments() {
+  const el = document.getElementById('tournamentsContent');
+  if (!el) return;
+
+  const lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+  function sectionHtml(label, items, showTeams, accentClass) {
+    let html = '<div class="tourn-section">';
+    html += '<h3 class="tourn-section-label">' + label + '</h3>';
+    items.forEach(function(t) {
+      const away = _tournDaysAway(t.startMs);
+      var classes = 'tourn-card ' + accentClass;
+      if (t.highlight) classes += ' tourn-card--featured';
+      if (t.comingSoon) classes += ' tourn-card--locked';
+      html += '<div class="' + classes + '"' + (t.comingSoon ? ' data-coming-soon="1"' : '') + '>';
+      html += '<div class="tourn-card-top">';
+      html += '<div class="tourn-card-info">';
+      html += '<div class="tourn-card-name">' + esc(t.name) + '</div>';
+      if (t.subtitle) html += '<div class="tourn-card-sub">' + esc(t.subtitle) + '</div>';
+      html += '</div>';
+      html += '<div class="tourn-card-right">';
+      if (away) html += '<span class="tourn-badge tourn-badge--soon">' + away + '</span>';
+      html += '<div class="tourn-card-dates">' + esc(t.dates) + '</div>';
+      html += '</div>';
+      html += '</div>';
+      html += '<div class="tourn-card-meta">';
+      html += '<svg class="tourn-meta-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M8 1.5C5.515 1.5 3.5 3.515 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.485-2.015-4.5-4.5-4.5z"/></svg>';
+      html += '<span>' + esc(t.location || '') + '</span>';
+      html += '</div>';
+      if (t.note) html += '<div class="tourn-card-note">' + esc(t.note) + '</div>';
+      if (showTeams && t.teams && t.teams.length) {
+        html += '<div class="tourn-teams">';
+        t.teams.forEach(function(tm) {
+          html += '<span class="tourn-team-chip">' + esc(tm) + '</span>';
+        });
+        html += '</div>';
+      }
+      // Lock overlay for coming-soon cards
+      if (t.comingSoon) {
+        html += '<div class="tourn-card-lock-overlay">' +
+          lockSvg +
+          '<span>Coming Soon</span>' +
+          '</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  el.innerHTML =
+    sectionHtml('In-Season Tournaments', TOURNAMENTS.inSeason, true, 'tourn-card--blue') +
+    sectionHtml('Conference Tournaments', TOURNAMENTS.conference, false, 'tourn-card--purple') +
+    sectionHtml('Postseason', TOURNAMENTS.postseason, false, 'tourn-card--gold');
+
+  // Wire click on locked cards
+  el.querySelectorAll('.tourn-card--locked').forEach(function(card) {
+    card.addEventListener('click', function() {
+      toast('This tournament is coming soon. Check back as the season approaches!', 'info');
+    });
+  });
+}
+
 function renderBracket() {
   const content = document.getElementById('bracketContent');
   if (!content) return;
-  const activeTab = document.querySelector('.bracket-tab.active');
-  const region = activeTab ? activeTab.dataset.region : 'East';
+
+  // Gate: no tournament selected
+  if (!state.selectedTournament) {
+    content.innerHTML = getLockHtml('the bracket');
+    const btn = content.querySelector('#plSelectTournBtn');
+    if (btn) btn.addEventListener('click', openTournamentSelector);
+    return;
+  }
+
+  updateBracketTabs();
+  const fmt = state.selectedTournament.bracketFormat;
   const bracketData = getBracketState() || { regions: {}, finalFour: [null, null], championship: null };
 
-  if (region === 'FinalFour') { renderFinalFour(content, bracketData); return; }
-
-  const regData = (window.MM_BRACKET_DATA || { regions: [] }).regions.find(r => r.name === region);
-  if (!regData) { content.innerHTML = '<p style="color:var(--muted);padding:20px">No bracket data.</p>'; return; }
-
-  renderRegionSimple(content, regData, bracketData, region);
+  if (fmt === 'ncaa64') {
+    const activeTab = document.querySelector('.bracket-tab.active');
+    const region = activeTab ? activeTab.dataset.region : 'East';
+    if (region === 'FinalFour') { renderFinalFour(content, bracketData); return; }
+    const regData = (window.MM_BRACKET_DATA || { regions: [] }).regions.find(r => r.name === region);
+    if (!regData) { content.innerHTML = '<p style="color:var(--muted);padding:20px">No bracket data.</p>'; return; }
+    renderRegionSimple(content, regData, bracketData, region, null);
+  } else {
+    // Single bracket format
+    const regData = (window.MM_BRACKET_DATA || { regions: [] }).regions[0];
+    if (!regData) { content.innerHTML = '<p style="color:var(--muted);padding:20px">No bracket data.</p>'; return; }
+    const customRoundNames = state.selectedTournament.roundNames || null;
+    renderRegionSimple(content, regData, bracketData, regData.name, customRoundNames);
+  }
 }
 
-function renderRegionSimple(content, regData, bracketData, region) {
-  const roundNames = ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite 8'];
-  const roundWinners = bracketData.regions[region] || [[], [], [], []];
-  const canEdit = isCommissioner();
+function renderRegionSimple(content, regData, bracketData, region, customRoundNames) {
+  const defaultRoundNames = ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite 8'];
+  const roundNames  = customRoundNames || defaultRoundNames;
+  const numRounds   = roundNames.length;
+  const roundWinners = bracketData.regions[region] || Array(numRounds).fill(null).map(() => []);
+  const canEdit     = isCommissioner();
 
   const seedMap = {};
   (regData.matchups || []).forEach(mu => {
@@ -1867,12 +2363,12 @@ function renderRegionSimple(content, regData, bracketData, region) {
 
   const makeTeamRow = (team, won, lost, rnd, m) => {
     if (!team) return '<div class="br-team br-tbd"><span class="br-seed">-</span><span class="br-name">TBD</span></div>';
-    const matchWinner = roundWinners[rnd][m] || null;
+    const matchWinner = (roundWinners[rnd] || [])[m] || null;
     const clickable = canEdit && !matchWinner;
     const editAttr = clickable ? ' data-team="' + esc(team.name) + '" data-rnd="' + rnd + '" data-match="' + m + '"' : '';
     let cls = 'br-team';
-    if (won) cls += ' br-winner';
-    if (lost) cls += ' br-loser';
+    if (won)       cls += ' br-winner';
+    if (lost)      cls += ' br-loser';
     if (clickable) cls += ' br-clickable';
     const owner = getOwnerInitials(team.name);
     return '<div class="' + cls + '"' + editAttr + '>' +
@@ -1885,10 +2381,10 @@ function renderRegionSimple(content, regData, bracketData, region) {
   };
 
   let html = '<div class="br-region">';
-  for (let rnd = 0; rnd < 4; rnd++) {
-    const matchCount = Math.pow(2, 3 - rnd);
-    const prev = rnd === 0 ? null : (roundWinners[rnd - 1] || []);
-    const unlocked = rnd === 0 || (prev && prev.filter(Boolean).length >= matchCount * 2);
+  for (let rnd = 0; rnd < numRounds; rnd++) {
+    const matchCount = Math.pow(2, numRounds - 1 - rnd);
+    const prev       = rnd === 0 ? null : (roundWinners[rnd - 1] || []);
+    const unlocked   = rnd === 0 || (prev && prev.filter(Boolean).length >= matchCount * 2);
 
     html += '<div class="br-round' + (!unlocked ? ' br-locked' : '') + '">';
     html += '<div class="br-round-label">' + roundNames[rnd] + '</div>';
@@ -1906,7 +2402,7 @@ function renderRegionSimple(content, regData, bracketData, region) {
           topTeam = tName ? { name: tName, seed: seedMap[tName] || '' } : null;
           botTeam = bName ? { name: bName, seed: seedMap[bName] || '' } : null;
         }
-        const winner = roundWinners[rnd][m] || null;
+        const winner = (roundWinners[rnd] || [])[m] || null;
         const topWon = !!(winner && topTeam && winner === topTeam.name);
         const botWon = !!(winner && botTeam && winner === botTeam.name);
         html += '<div class="br-matchup">' +
@@ -1924,18 +2420,18 @@ function renderRegionSimple(content, regData, bracketData, region) {
   if (canEdit) {
     content.querySelectorAll('.br-team[data-team]').forEach(el => {
       el.addEventListener('click', () => {
-        const rnd = parseInt(el.dataset.rnd);
+        const rnd      = parseInt(el.dataset.rnd);
         const matchIdx = parseInt(el.dataset.match);
         const teamName = el.dataset.team;
         if (!teamName) return;
         const bd = getBracketState() || { regions: {}, finalFour: [null, null], championship: null };
-        if (!bd.regions[region]) bd.regions[region] = [[], [], [], []];
+        if (!bd.regions[region]) bd.regions[region] = Array(numRounds).fill(null).map(() => []);
+        if (!bd.regions[region][rnd]) bd.regions[region][rnd] = [];
         bd.regions[region][rnd][matchIdx] = teamName;
         saveBracketState(bd);
         addActivity(teamName + ' advances in ' + region);
         saveState();
         renderBracket();
-        checkSCTrigger();
       });
     });
   }
@@ -2037,13 +2533,6 @@ function renderScoringSettings() {
     if (tog) tog.checked = (state.scoring.active || []).includes(cat);
     if (wt) wt.value = state.scoring.weights[cat] || 1;
   });
-  const scTog = document.getElementById('scEnabledToggle');
-  const scPill = document.getElementById('scStatusPill');
-  if (scTog) scTog.checked = state.secondChance.enabled;
-  if (scPill) {
-    scPill.textContent = state.secondChance.enabled ? 'On' : 'Off';
-    scPill.className = 'status-pill ' + (state.secondChance.enabled ? 'status-on' : 'status-off');
-  }
   const tmMin = document.getElementById('timerMinutes');
   const tmSec = document.getElementById('timerSeconds');
   if (tmMin || tmSec) {
@@ -2135,7 +2624,10 @@ function updateTimerDisplay() {
     homeTimer.classList.toggle('urgency', rem > 0 && rem <= 10);
   }
   if (dcbTimer) dcbTimer.textContent = fmt;
-  if (mcbTimer) mcbTimer.textContent = fmt;
+  if (mcbTimer) {
+    mcbTimer.textContent = state.timerRunning ? fmt : '';
+    mcbTimer.style.display = state.timerRunning ? '' : 'none';
+  }
   try { updateMobileClockBar(); } catch (e) { }
   // Circular ring
   try { updateRingProgress(); } catch (e) { }
@@ -2190,7 +2682,6 @@ function renderActivityFeed() {
   function feedMeta(msg) {
     if (msg.includes('drafted') || msg.includes('Auto-pick')) return { icon: '🏀', cls: 'feed-draft' };
     if (msg.includes('advances') || msg.includes('champion')) return { icon: '🏆', cls: 'feed-bracket' };
-    if (msg.includes('Second Chance') || msg.includes('claimed')) return { icon: '⚡', cls: 'feed-sc' };
     if (msg.includes('simulated')) return { icon: '📊', cls: 'feed-sim' };
     if (msg.includes('↩') || msg.includes('Undo')) return { icon: '↩', cls: 'feed-undo' };
     if (msg.includes('skipped')) return { icon: '⏭', cls: 'feed-skip' };
@@ -2294,17 +2785,14 @@ function sendRpChatMessage() {
 
 // ── TUTORIAL ──────────────────────────────────────────────
 const TUT_STEPS = [
-  { title: 'Welcome, Commissioner!', body: "You're setting up a March Madness Fantasy league. This quick setup will walk you through everything. Let's go!" },
-  { title: 'League Name', body: 'Give your league a name.', input: [{ id: 'tut-league-name', label: 'League Name', default: 'My League', key: 'leagueName' }] },
-  { title: 'Add Managers', body: 'Enter the names of everyone in the league, separated by commas.', input: [{ id: 'tut-managers', label: 'Manager Names (comma-separated)', default: 'Jake, Alex, Morgan', key: 'managers' }] },
-  { title: 'Draft Rounds', body: 'How many rounds in the snake draft? (8 rounds = 8 players per manager)', input: [{ id: 'tut-rounds', label: 'Rounds', default: 8, type: 'number', key: 'rounds' }] },
-  { title: 'Pick Timer', body: 'How long does each manager have to make a pick?', input: [{ id: 'tut-timer-min', label: 'Minutes', default: 1, type: 'number', key: 'timerMin' }, { id: 'tut-timer-sec', label: 'Seconds (0, 15, 30, 45)', default: 30, type: 'number', key: 'timerSec' }] },
-  { title: 'League Code', body: "Here's your league code. Share it with your managers so they can join.", code: true },
-  { title: 'Scoring', body: "Players score fantasy points based on their real tournament stats. You can customize scoring in Settings. Default: PTS(1x) · REB(1.2x) · AST(1.5x) · STL(2x) · BLK(2x)" },
-  { title: 'Home', body: "The Home tab shows who's on the clock, a countdown timer, and a live activity feed of league events." },
-  { title: 'Draft Room', body: "The Draft tab is where you pick players. The snake order alternates direction each round. Click a player to view details, click Pick › to draft." },
-  { title: 'Teams & Standings', body: "Teams shows each manager's roster and fantasy points. Standings ranks everyone. Use Simulate Stats to see how scores could change." },
-  { title: "You're Ready!", body: "Your league is set up and ready to go. Head to the Draft Room to start picking! You can always adjust settings from the Settings tab." }
+  { type: 'welcome',  title: 'Welcome, Commissioner', body: "You're setting up a Tipoff Fantasy league. This takes about 60 seconds." },
+  { type: 'name',     title: 'League Name', body: 'What do you want to call your league?', input: [{ id: 'tut-league-name', label: 'League Name', placeholder: 'e.g. March Madness 2026', default: 'My League', key: 'leagueName' }] },
+  { type: 'size',     title: 'League Size', body: 'How many managers will join? Once the league is full, no one else can join with the code.', size: true },
+  { type: 'rounds',   title: 'Draft Rounds', body: 'How many rounds in the snake draft? Each round, every manager picks one player.', input: [{ id: 'tut-rounds', label: 'Number of Rounds', placeholder: '8', default: 8, type: 'number', key: 'rounds' }] },
+  { type: 'timer',    title: 'Pick Timer', body: 'How long does each manager have to make their selection before auto-pick kicks in?', input: [{ id: 'tut-timer-min', label: 'Minutes', placeholder: '1', default: 1, type: 'number', key: 'timerMin' }, { id: 'tut-timer-sec', label: 'Seconds', placeholder: '30', default: 30, type: 'number', key: 'timerSec' }] },
+  { type: 'code',     title: 'Your League Code', body: 'Share this code with your managers. They join from the home screen. No account needed..', code: true },
+  { type: 'scoring',  title: 'How Scoring Works', body: 'Points are earned from real tournament stats. Default weights: PTS 1× · REB 1.2× · AST 1.5× · STL 2× · BLK 2×. Adjust anytime in Settings.' },
+  { type: 'ready',    title: "You're All Set", body: 'Your league is live. Share the code, wait for your managers to join, then choose a tournament and start the draft.' }
 ];
 
 let tutData = {};
@@ -2349,43 +2837,92 @@ function tutBack() {
 
 function applyTutData() {
   if (tutData.leagueName) state.leagueName = tutData.leagueName.trim() || 'My League';
-  if (tutData.managers) {
-    const mgrs = tutData.managers.split(',').map(m => m.trim()).filter(Boolean);
-    if (mgrs.length > 0) state.managers = mgrs;
-    if (!state.managers.includes(state.commissioner)) state.managers.unshift(state.commissioner);
-  }
+  if (tutData.maxManagers) state.maxManagers = parseInt(tutData.maxManagers) || 8;
   if (tutData.rounds) state.rounds = parseInt(tutData.rounds) || 8;
   if (tutData.timerMin !== undefined || tutData.timerSec !== undefined) {
     const m = isNaN(parseInt(tutData.timerMin)) ? 1 : parseInt(tutData.timerMin);
     const s = isNaN(parseInt(tutData.timerSec)) ? 30 : parseInt(tutData.timerSec);
-    state.pickTimerSeconds = Math.max(10, m * 60 + s); // minimum 10s
+    state.pickTimerSeconds = Math.max(10, m * 60 + s);
   }
 }
 
 function renderTutStep() {
   const step = TUT_STEPS[tutStep];
-  const dotsEl = document.getElementById('tutDots');
-  const bodyEl = document.getElementById('tutBody');
+  const bodyEl  = document.getElementById('tutBody');
+  const fillEl  = document.getElementById('tutBarFill');
   const backBtn = document.getElementById('tutBackBtn');
   const nextBtn = document.getElementById('tutNextBtn');
-  if (!dotsEl || !bodyEl) return;
+  const stepNumEl = document.getElementById('tutStepNum');
+  const stepTotalEl = document.getElementById('tutStepTotal');
+  if (!bodyEl) return;
 
-  dotsEl.innerHTML = TUT_STEPS.map((_, i) => '<div class="tut-dot' + (i === tutStep ? ' active' : '') + '"></div>').join('');
+  const total = TUT_STEPS.length;
+  const pct = Math.round(((tutStep + 1) / total) * 100);
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (stepNumEl) stepNumEl.textContent = tutStep + 1;
+  if (stepTotalEl) stepTotalEl.textContent = total;
 
-  let html = '<h2>' + step.title + '</h2><p>' + step.body + '</p>';
+  let html = '<h2 class="tut-title">' + step.title + '</h2>';
+  html += '<p class="tut-body-text">' + step.body + '</p>';
+
   if (step.input) {
-    step.input.forEach(inp => {
-      html += '<div class="tut-input-group"><label>' + inp.label + '</label>' +
-        '<input type="' + (inp.type || 'text') + '" id="' + inp.id + '" value="' + (tutData[inp.key] !== undefined ? tutData[inp.key] : inp.default) + '" style="background:var(--panel-2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:15px;width:100%;" /></div>';
+    const isTimer = step.type === 'timer';
+    html += '<div class="tut-inputs' + (isTimer ? ' tut-inputs--row' : '') + '">';
+    step.input.forEach(function(inp) {
+      const val = tutData[inp.key] !== undefined ? tutData[inp.key] : inp.default;
+      html += '<div class="tut-input-group">' +
+        '<label class="tut-label">' + inp.label + '</label>' +
+        '<input class="tut-input" type="' + (inp.type || 'text') + '" id="' + inp.id + '" value="' + esc(String(val)) + '" placeholder="' + esc(inp.placeholder || '') + '" /></div>';
+    });
+    html += '</div>';
+  }
+
+  if (step.size) {
+    const cur = parseInt(tutData.maxManagers) || state.maxManagers || 8;
+    html += '<div class="tut-size-grid">';
+    [4, 6, 8, 10, 12].forEach(function(n) {
+      html += '<button class="tut-size-pill' + (cur === n ? ' tut-size-pill--active' : '') + '" data-size="' + n + '">' +
+        '<span class="tut-size-num">' + n + '</span>' +
+        '<span class="tut-size-label">players</span>' +
+        '</button>';
+    });
+    html += '</div>';
+  }
+
+  if (step.code) {
+    html += '<div class="tut-code-block">';
+    html += '<div class="tut-code-display">' + (state.leagueCode || '--') + '</div>';
+    html += '<button class="tut-copy-btn" id="tutCopyBtn">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+      ' Copy Code</button>';
+    html += '</div>';
+    html += '<p class="tut-code-hint">Managers join from the home screen using this code.</p>';
+  }
+
+  bodyEl.innerHTML = html;
+
+  // Wire size pills
+  bodyEl.querySelectorAll('.tut-size-pill').forEach(function(pill) {
+    pill.addEventListener('click', function() {
+      tutData.maxManagers = pill.dataset.size;
+      bodyEl.querySelectorAll('.tut-size-pill').forEach(function(p) { p.classList.remove('tut-size-pill--active'); });
+      pill.classList.add('tut-size-pill--active');
+    });
+  });
+
+  // Wire copy button
+  const copyBtn = document.getElementById('tutCopyBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function() {
+      const code = state.leagueCode || '';
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code'; }, 2000); });
+      }
     });
   }
-  if (step.code) {
-    html += '<div class="tut-code-display">' + (state.leagueCode || '--') + '</div>' +
-      '<p style="font-size:13px;color:var(--muted);margin-top:10px;">Share this with your managers. They can join from the splash screen.</p>';
-  }
-  bodyEl.innerHTML = html;
+
   if (backBtn) backBtn.style.visibility = tutStep === 0 ? 'hidden' : 'visible';
-  if (nextBtn) nextBtn.textContent = tutStep === TUT_STEPS.length - 1 ? "Let's Go!" : 'Next →';
+  if (nextBtn) nextBtn.textContent = tutStep === TUT_STEPS.length - 1 ? "Let's Go!" : 'Continue';
 }
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -2412,11 +2949,11 @@ document.addEventListener('DOMContentLoaded', () => {
     clearSession();
     state = Object.assign({}, defaultState);
     state.players = (window.MM_PLAYERS || []).slice();
-    showLogin();
+    showLanding();
   }
   document.getElementById('signOutBtn')?.addEventListener('click', doSignOut);
   document.getElementById('navSignOutBtn')?.addEventListener('click', doSignOut);
-  document.getElementById('splashBackBtn')?.addEventListener('click', showLogin);
+  document.getElementById('splashBackBtn')?.addEventListener('click', showLanding);
 
   // Splash
   document.getElementById('createLeagueSplashBtn')?.addEventListener('click', () => {
@@ -2565,8 +3102,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // PDC close
   document.getElementById('pdcClose')?.addEventListener('click', closePDC);
   document.getElementById('pdcOverlay')?.addEventListener('click', e => { if (e.target.id === 'pdcOverlay') closePDC(); });
-  document.getElementById('claimSCBtn')?.addEventListener('click', e => { claimSecondChance(e.target.dataset.pid); });
-
   // Standings simulate + reset
   document.getElementById('simulateBtn')?.addEventListener('click', simulateScores);
   document.getElementById('resetStatsBtn')?.addEventListener('click', resetStats);
@@ -2579,13 +3114,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // Draft undo
   document.getElementById('undoPickBtn')?.addEventListener('click', undoLastPick);
 
-  // Bracket tabs
+  // Bracket view toggle
+  const bvtYour = document.getElementById('bvtYourBracket');
+  const bvtTourn = document.getElementById('bvtTournaments');
+  const yourBracketView = document.getElementById('yourBracketView');
+  const tournamentsView = document.getElementById('tournamentsView');
+  if (bvtYour && bvtTourn) {
+    bvtYour.addEventListener('click', function() {
+      bvtYour.classList.add('active');
+      bvtTourn.classList.remove('active');
+      yourBracketView.style.display = '';
+      tournamentsView.style.display = 'none';
+    });
+    bvtTourn.addEventListener('click', function() {
+      bvtTourn.classList.add('active');
+      bvtYour.classList.remove('active');
+      tournamentsView.style.display = '';
+      yourBracketView.style.display = 'none';
+      renderTournaments();
+    });
+  }
+
+  // Bracket tabs (static fallback, updateBracketTabs() rewires dynamically)
   document.querySelectorAll('.bracket-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.bracket-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       renderBracket();
     });
+  });
+
+  // Tournament selector modal
+  document.getElementById('tsmClose')?.addEventListener('click', function() {
+    const modal = document.getElementById('tournamentSelectModal');
+    if (modal) modal.style.display = 'none';
+  });
+  document.getElementById('tournamentSelectModal')?.addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
   });
 
   // Settings
@@ -2611,26 +3176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     clearInterval(timerInterval);
     saveState();
     toast('Timer set to ' + formatTimer(state.pickTimerSeconds), 'success');
-  });
-  document.getElementById('scEnabledToggle')?.addEventListener('change', e => {
-    state.secondChance.enabled = e.target.checked;
-    saveState();
-    renderScoringSettings();
-    toast('Second Chance ' + (state.secondChance.enabled ? 'enabled' : 'disabled'), 'info');
-  });
-  document.getElementById('openSCBtn')?.addEventListener('click', () => {
-    state.secondChance.windowOpen = true;
-    addActivity('Commissioner opened Second Chance window');
-    saveState();
-    render();
-    toast('Second Chance window opened!', 'success');
-  });
-  document.getElementById('closeSCBtn')?.addEventListener('click', () => {
-    state.secondChance.windowOpen = false;
-    addActivity('Commissioner closed Second Chance window');
-    saveState();
-    render();
-    toast('Second Chance window closed', 'info');
   });
   document.getElementById('copyCodeBtn')?.addEventListener('click', () => {
     if (navigator.clipboard && state.leagueCode) {
@@ -2666,7 +3211,6 @@ document.addEventListener('DOMContentLoaded', () => {
     state.baselineStats = {};
     state.prevRankings = [];
     state.activityFeed = [];
-    state.secondChance = Object.assign({}, defaultState.secondChance);
     // Reset player stats back to data file defaults
     state.players = (window.MM_PLAYERS || []).slice();
     clearInterval(timerInterval);
@@ -2725,7 +3269,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (session) {
     if (loadState() && state.leagueId) { enterLeague(); }
     else { showSplash(true); }
-  } else { showLogin(); }
+  } else { showLanding(); }
+
+  // Landing screen buttons
+  document.getElementById('landingCreateBtn')?.addEventListener('click', showSignup);
+  document.getElementById('landingSignInBtn')?.addEventListener('click', showLogin);
 
   // Chat
   document.getElementById('chatSendBtn')?.addEventListener('click', sendChatMessage);
@@ -2784,9 +3332,6 @@ document.addEventListener('DOMContentLoaded', () => {
       Object.values(state.drafted).forEach(d => {
         if (d.manager === oldName) d.manager = newName;
       });
-      // Update second chance claims
-      const sc = state.secondChance.claims || {};
-      if (sc[oldName]) { sc[newName] = sc[oldName]; delete sc[oldName]; }
       // Update prevRankings so standings delta stays accurate
       if (state.prevRankings) {
         state.prevRankings = state.prevRankings.map(n => n === oldName ? newName : n);
@@ -2958,7 +3503,7 @@ async function requestNotifPermission() {
 async function showOTCNotification(pick) {
   if (!notifSupported()) return;
   if (Notification.permission !== 'granted' || !getNotifPref()) return;
-  const body = 'Pick #' + pick.pickNumber + ' · ' + (state.leagueName || 'Bracket HQ') + '. Tap to draft now.';
+  const body = 'Pick #' + pick.pickNumber + ' · ' + (state.leagueName || 'Tipoff Fantasy') + '. Tap to draft now.';
   try {
     const reg = await navigator.serviceWorker.ready;
     await reg.showNotification("⏰ You're on the clock!", {

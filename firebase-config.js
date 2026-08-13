@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-//  BRACKET HQ — Firebase Configuration
+//  TIPOFF FANTASY: Firebase Configuration
 //
 //  STEP-BY-STEP SETUP (takes ~5 minutes):
 //
 //  1. Go to https://console.firebase.google.com
-//  2. Click "Add project" → name it "Bracket HQ" → Continue → Create project
+//  2. Click "Add project" → name it "Tipoff Fantasy" → Continue → Create project
 //  3. On the project overview page, click the Web icon (</>)
-//     → App nickname: "BracketHQ Web" → Register app
+//     → App nickname: "Tipoff Fantasy Web" → Register app
 //  4. Copy the firebaseConfig object that appears and paste it below
 //     (replacing the PASTE_HERE placeholders)
 //
@@ -63,7 +63,7 @@ try {
   window._fbUser = null; // set by onAuthStateChanged in app.js
   console.log('[Firebase] Initialized successfully');
 } catch (e) {
-  console.warn('[Firebase] Init failed — app will run in offline/localStorage mode.', e.message);
+  console.warn('[Firebase] Init failed. App will run in offline/localStorage mode.', e.message);
   window._auth = null;
   window._db   = null;
   window._fbUser = null;

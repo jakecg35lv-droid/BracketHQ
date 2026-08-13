@@ -1,7 +1,7 @@
 {
-  "name": "Bracket HQ",
-  "short_name": "BracketHQ",
-  "description": "March Madness fantasy draft — pick your players, track the bracket.",
+  "name": "Tipoff Fantasy",
+  "short_name": "Tipoff",
+  "description": "March Madness fantasy draft: pick your players, track the bracket.",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

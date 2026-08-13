@@ -4,20 +4,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Bracket HQ</title>
+  <title>Tipoff Fantasy</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0a0d1a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Bracket HQ" />
+  <meta name="apple-mobile-web-app-title" content="Tipoff Fantasy" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow:wght@300;600;700;800;900&family=Barlow+Condensed:wght@300;400;700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="src/styles.css" />
 </head>
@@ -25,13 +25,28 @@
 <body>
 
   <!-- ═══════════════════════════════════════════
+     LANDING SCREEN (unauthenticated entry point)
+════════════════════════════════════════════ -->
+  <div id="landingScreen" class="screen" style="display:none;">
+    <div class="landing-hero">
+      <img src="TIPO.png" class="landing-logo" width="140" height="140" alt="Tipoff Fantasy" />
+      <h1 class="landing-title">TIPOFF FANTASY</h1>
+      <p class="landing-tag">Draft. Compete. Win.</p>
+      <div class="landing-actions">
+        <button id="landingCreateBtn" class="btn-primary btn-lg">Create Account</button>
+        <button id="landingSignInBtn" class="btn-ghost btn-lg">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
      LOGIN SCREEN
 ════════════════════════════════════════════ -->
-  <div id="loginScreen" class="screen">
-    <img src="logo.png" class="auth-bg-logo" alt="" aria-hidden="true" />
+  <div id="loginScreen" class="screen" style="display:none;">
+    <img src="TIPO.png" class="auth-bg-logo" alt="" aria-hidden="true" />
     <div class="auth-card">
       <div class="auth-logo">
-        <img src="logo.png" class="logo-mark" width="110" height="110" alt="Bracket HQ logo" />
+        <img src="TIPO.png" class="logo-mark" width="110" height="110" alt="Tipoff Fantasy logo" />
       </div>
       <h2 class="auth-title">Sign in Here</h2>
       <p class="auth-sub">A New Way to March</p>
@@ -57,7 +72,7 @@
   <div id="signupScreen" class="screen" style="display:none;">
     <div class="auth-card">
       <div class="auth-logo">
-        <img src="logo.png" class="logo-mark" width="90" height="90" alt="Bracket HQ logo" />
+        <img src="TIPO.png" class="logo-mark" width="90" height="90" alt="Tipoff Fantasy logo" />
       </div>
       <h2 class="auth-title">Create Account</h2>
       <p class="auth-sub">Join the madness.</p>
@@ -85,10 +100,10 @@
     </div>
   </div>
 
-  <!-- ── Basketball court intro overlay — lives OUTSIDE splashScreen so
+  <!-- ── Basketball court intro overlay - lives OUTSIDE splashScreen so
        splash opacity:0 during crossfade doesn't hide the animation ── -->
   <div id="mmIntro" aria-hidden="true" style="display:none;">
-    <!-- Court SVG — same elements as nav icon, scaled to full screen portrait -->
+    <!-- Court SVG - same elements as nav icon, scaled to full screen portrait -->
     <svg class="mm-bsv" viewBox="0 0 390 760" preserveAspectRatio="xMidYMid meet" fill="none" xmlns="http://www.w3.org/2000/svg">
       <!-- Court outer boundary -->
       <path class="mm-path mm-court-outline" pathLength="100"
@@ -119,8 +134,8 @@
     <div class="mm-glow"></div>
     <!-- Logo + title -->
     <div class="mm-content">
-      <img class="mm-intro-logo" src="logo.png" alt="Bracket HQ" width="120" height="120" />
-      <div class="mm-intro-title">BRACKET HQ</div>
+      <img class="mm-intro-logo" src="TIPO.png" alt="Tipoff Fantasy" width="120" height="120" />
+      <div class="mm-intro-title">TIPOFF FANTASY</div>
       <div class="mm-intro-sub">Draft. Compete. Win.</div>
     </div>
     <!-- Flash burst -->
@@ -136,13 +151,13 @@
       <div class="splash-logo">
         <div class="splash-flash"></div>
         <div class="splash-rays"></div>
-        <img src="logo.png" class="splash-logo-img" width="200" height="200" alt="Bracket HQ logo" />
+        <img src="TIPO.png" class="splash-logo-img" width="200" height="200" alt="Tipoff Fantasy logo" />
         <p class="splash-tag">Draft. Compete. Win.</p>
       </div>
       <div class="splash-actions">
         <button id="createLeagueSplashBtn" class="btn-primary btn-lg">+ Create League</button>
         <button id="joinLeagueSplashBtn" class="btn-ghost btn-lg">Join League</button>
-        <button id="splashBackBtn" class="btn-sign-out" style="margin-top:8px;">← Back to Login</button>
+        <button id="splashBackBtn" class="btn-sign-out" style="margin-top:8px;">Back</button>
       </div>
     </div>
     <div class="splash-leagues">
@@ -179,8 +194,8 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <img src="logo.png" class="logo-mark sidebar-logo-img" width="42" height="42" alt="Bracket HQ" />
-        <span class="sidebar-logo-text">Bracket HQ</span>
+        <img src="TIPO.png" class="logo-mark sidebar-logo-img" width="42" height="42" alt="Tipoff Fantasy" />
+        <span class="sidebar-logo-text">Tipoff Fantasy</span>
       </div>
       <nav class="sidebar-nav">
         <button class="nav-btn active" data-page="home">
@@ -282,8 +297,7 @@
           <div class="mcb-label">On the Clock</div>
           <div class="mcb-manager" id="mcbManager">-</div>
         </div>
-        <div class="mcb-timer" id="mcbTimer">-</div>
-        <img src="logo.png" class="mcb-logo" alt="" aria-hidden="true" />
+        <div class="mcb-timer" id="mcbTimer"></div>
       </div>
 
       <!-- YOU'RE ON THE CLOCK banner (shows on any page when it's your pick) -->
@@ -294,7 +308,7 @@
             <span class="otc-label">Your Pick!</span>
             <span class="otc-sub">You're on the clock</span>
           </div>
-          <button class="otc-btn" id="otcDraftBtn">Draft Now →</button>
+          <button class="otc-btn" id="otcDraftBtn">Draft Now</button>
         </div>
       </div>
 
@@ -328,10 +342,8 @@
           <span id="homeStatusPill" class="status-pill status-setup">Setup</span>
         </div>
 
-        <!-- SC Banner -->
-        <div id="scBanner" class="sc-banner" style="display:none;">
-          <strong>Second Chance</strong> pickup window is now open! Head to Players tab to claim.
-        </div>
+        <!-- Tournament Banner -->
+        <div id="tournamentBanner" class="tourn-banner tourn-banner--empty"></div>
 
         <!-- On the Clock hero -->
         <div class="home-hero-card">
@@ -405,7 +417,6 @@
               <div class="hc-label">Draft</div>
               <div class="hc-sub">Draft room &amp; player pool</div>
             </div>
-            <span class="hc-arrow">→</span>
           </div>
           <div class="home-card" data-page="teams">
             <div class="hc-icon hc-purple">
@@ -415,7 +426,6 @@
               <div class="hc-label">Teams</div>
               <div class="hc-sub">View all team rosters</div>
             </div>
-            <span class="hc-arrow">→</span>
           </div>
           <div class="home-card" data-page="standings">
             <div class="hc-icon hc-orange">
@@ -425,7 +435,6 @@
               <div class="hc-label">Standings</div>
               <div class="hc-sub">Check the race</div>
             </div>
-            <span class="hc-arrow">→</span>
           </div>
           <div class="home-card" data-page="bracket">
             <div class="hc-icon hc-teal">
@@ -435,7 +444,6 @@
               <div class="hc-label">Bracket</div>
               <div class="hc-sub">Tournament tree</div>
             </div>
-            <span class="hc-arrow">→</span>
           </div>
           <div class="home-card" data-page="chat">
             <div class="hc-icon hc-pink">
@@ -445,7 +453,6 @@
               <div class="hc-label">Chat</div>
               <div class="hc-sub">League messages</div>
             </div>
-            <span class="hc-arrow">→</span>
           </div>
         </div>
 
@@ -479,7 +486,7 @@
 
         <!-- Home Footer -->
         <div class="home-footer">
-          <span class="home-footer-brand">Bracket HQ</span>
+          <span class="home-footer-brand">Tipoff Fantasy</span>
           <div class="home-footer-socials">
             <a href="#" class="home-footer-icon" aria-label="Twitter">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
@@ -527,6 +534,12 @@
             <div class="draft-order-strip" id="draftOrderStrip"></div>
           </div>
 
+          <!-- Recent picks - horizontal strip below order -->
+          <div class="draft-recent-strip">
+            <span class="draft-recent-label">Recent Picks</span>
+            <div class="draft-recent-scroll" id="draftRecentPicks"></div>
+          </div>
+
           <div class="draft-content">
             <div class="draft-left">
               <div class="draft-toolbar">
@@ -554,15 +567,11 @@
                 <div id="draftPlayerGrid"></div>
               </div>
             </div>
-            <div class="draft-feed-panel">
-              <h3 class="feed-title">Recent Picks</h3>
-              <div id="draftRecentPicks" class="recent-picks-list"></div>
-            </div>
           </div>
 
           <!-- Commissioner controls -->
           <div class="draft-commissioner-controls commissioner-only">
-            <button id="startTimerBtnDraft" class="btn-sm btn-green">▶ Start</button>
+            <button id="startTimerBtnDraft" class="btn-sm btn-green">Start</button>
             <button id="pauseBtnDraft" class="btn-sm btn-ghost">Pause</button>
             <button id="resetTimerBtnDraft" class="btn-sm btn-ghost">↺ Reset</button>
             <div class="dcc-divider"></div>
@@ -668,14 +677,29 @@
         <div class="page-header">
           <h2>Tournament Bracket</h2>
         </div>
-        <div class="bracket-tabs">
-          <button class="bracket-tab active" data-region="East">East</button>
-          <button class="bracket-tab" data-region="South">South</button>
-          <button class="bracket-tab" data-region="Midwest">Midwest</button>
-          <button class="bracket-tab" data-region="West">West</button>
-          <button class="bracket-tab bracket-tab-ff" data-region="FinalFour">Final Four</button>
+
+        <!-- View toggle -->
+        <div class="bracket-view-toggle">
+          <button class="bvt-btn active" id="bvtYourBracket">Your Bracket</button>
+          <button class="bvt-btn" id="bvtTournaments">Tournaments</button>
         </div>
-        <div id="bracketContent" class="bracket-content"></div>
+
+        <!-- Your Bracket view -->
+        <div id="yourBracketView">
+          <div class="bracket-tabs">
+            <button class="bracket-tab active" data-region="East">East</button>
+            <button class="bracket-tab" data-region="South">South</button>
+            <button class="bracket-tab" data-region="Midwest">Midwest</button>
+            <button class="bracket-tab" data-region="West">West</button>
+            <button class="bracket-tab bracket-tab-ff" data-region="FinalFour">Final Four</button>
+          </div>
+          <div id="bracketContent" class="bracket-content"></div>
+        </div>
+
+        <!-- Tournaments preview view -->
+        <div id="tournamentsView" style="display:none;">
+          <div id="tournamentsContent"></div>
+        </div>
       </section>
 
       <!-- ── CHAT ─────────────────────────────────── -->
@@ -733,7 +757,7 @@
             <div class="profile-invite-title">Invite Friends</div>
             <div class="profile-invite-sub">Send your league link. They join in one tap.</div>
           </div>
-          <button class="profile-invite-btn" id="profileShareBtn">Share →</button>
+          <button class="profile-invite-btn" id="profileShareBtn">Share Invite</button>
         </div>
 
         <!-- Quick actions -->
@@ -840,21 +864,6 @@
           <button class="btn-ghost btn-sm" id="notifEnableBtn" style="margin-top:10px;display:none;">Enable Notifications</button>
         </div>
 
-        <!-- Second Chance -->
-        <div class="panel">
-          <h3 class="panel-title">Second Chance Pickups</h3>
-          <div class="sc-settings-row">
-            <label class="toggle-label"><input type="checkbox" id="scEnabledToggle" /> Enable Second Chance</label>
-            <span id="scStatusPill" class="status-pill status-off">Off</span>
-          </div>
-          <div class="sc-btn-row commissioner-only">
-            <button id="openSCBtn" class="btn-primary btn-sm">Open Window</button>
-            <button id="closeSCBtn" class="btn-ghost btn-sm">Close Window</button>
-          </div>
-          <p class="muted" style="margin-top:8px;font-size:13px;">Second Chance window auto-opens after all Round of 64
-            games complete (if enabled).</p>
-        </div>
-
         <!-- League Management -->
         <div class="panel commissioner-only">
           <h3 class="panel-title">League Management</h3>
@@ -886,7 +895,7 @@
       <div class="rp-section">
         <div class="rp-section-title">Up Next</div>
         <div id="rpUpNext"><!-- rendered by JS --></div>
-        <button class="rp-view-all-btn" onclick="navigateTo('players')">View Draft Order →</button>
+        <button class="rp-view-all-btn" onclick="navigateTo('players')">View Draft Order</button>
       </div>
       <!-- STANDINGS -->
       <div class="rp-section">
@@ -895,7 +904,7 @@
           <button class="rp-link-btn" onclick="navigateTo('standings')">View All</button>
         </div>
         <div id="rpStandings"><!-- rendered by JS --></div>
-        <button class="rp-view-all-btn" onclick="navigateTo('standings')">Full Standings →</button>
+        <button class="rp-view-all-btn" onclick="navigateTo('standings')">Full Standings</button>
       </div>
       <!-- LEAGUE CHAT -->
       <div class="rp-section rp-section-chat">
@@ -974,9 +983,6 @@
       </div>
       <div class="pdc-stats" id="pdcStats"></div>
       <div class="pdc-draft-status" id="pdcDraftStatus"></div>
-      <div class="pdc-sc-btn" id="pdcSCBtn" style="display:none;">
-        <button id="claimSCBtn" class="btn-primary">Claim (Second Chance)</button>
-      </div>
     </div>
   </div>
 
@@ -1030,21 +1036,40 @@
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
 
+  <!-- Tournament Selector Modal -->
+  <div id="tournamentSelectModal" class="modal-backdrop tsm-overlay" style="display:none;">
+    <div class="modal-card tsm-card">
+      <div class="tsm-header">
+        <div>
+          <h3 class="tsm-title">Choose Tournament</h3>
+          <p class="tsm-sub">Select the event your league will draft and play for.</p>
+        </div>
+        <button class="tsm-close" id="tsmClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="tsm-body" id="tsmBody"></div>
+    </div>
+  </div>
+
   <!-- Tutorial Overlay -->
   <div id="tutorialOverlay" class="tut-overlay" style="display:none;">
     <div class="tut-card">
-      <div class="tut-dots" id="tutDots"></div>
+      <div class="tut-header">
+        <div class="tut-bar-track"><div class="tut-bar-fill" id="tutBarFill" style="width:12%"></div></div>
+        <span class="tut-step-label"><span id="tutStepNum">1</span> / <span id="tutStepTotal">8</span></span>
+      </div>
       <div class="tut-body" id="tutBody"></div>
       <div class="tut-footer">
-        <button class="tut-back-btn" id="tutBackBtn">← Back</button>
-        <button class="tut-next-btn" id="tutNextBtn">Next →</button>
+        <button class="tut-back-btn" id="tutBackBtn">Back</button>
+        <button class="tut-next-btn" id="tutNextBtn">Continue</button>
       </div>
     </div>
   </div>
 
   <!-- FAB: jump to draft on mobile -->
   <button class="fab fab-draft commissioner-only" id="draftFab" style="display:none;">
-    <span class="fab-icon">▶</span>
+    Draft
   </button>
 
   <script src="data/bracket.js"></script>

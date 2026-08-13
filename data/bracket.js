@@ -1,4 +1,4 @@
-// Bracket HQ — 2025 Tournament Bracket Data
+// Tipoff Fantasy: 2025 Tournament Bracket Data
 window.MM_BRACKET_DATA = {
   regions: [
     {

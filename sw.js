@@ -1,9 +1,9 @@
 /* ══════════════════════════════════════════════════════════
-   Bracket HQ — Service Worker
+   Tipoff Fantasy: Service Worker
    Cache-first for static assets, network-first for data
 ══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'brackethq-v50';
+const CACHE_NAME = 'tipoff-v87';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -11,8 +11,8 @@ const STATIC_ASSETS = [
   './src/app.js',
   './data/bracket.js',
   './data/players.js',
-  './logo.png',
-  'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow:wght@600;700;800;900&family=Barlow+Condensed:wght@700;800;900&display=swap'
+  './TIPO.png',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap'
 ];
 
 // ── INSTALL: cache all static assets ─────────────────────
@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', event => {
           return client.focus();
         }
       }
-      // No open tab — open a new one
+      // No open tab, opening a new one
       if (clients.openWindow) return clients.openWindow('./');
     })
   );
@@ -66,7 +66,7 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
 
-  // ESPN logos — no longer used, but keep passthrough for safety
+  // ESPN logos - no longer used, but keep passthrough for safety
   if (url.hostname.includes('espncdn.com')) {
     event.respondWith(
       fetch(event.request).catch(() => new Response('', { status: 408 }))
@@ -74,7 +74,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Google Fonts — cache-first
+  // Google Fonts: cache-first
   if (url.hostname.includes('fonts.g')) {
     event.respondWith(
       caches.match(event.request).then(cached => cached || fetch(event.request).then(res => {
@@ -86,7 +86,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Same-origin assets — cache-first, network fallback
+  // Same-origin assets: cache-first with network fallback
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(event.request).then(cached => {
