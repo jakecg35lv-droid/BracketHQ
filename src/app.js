@@ -239,7 +239,8 @@ function updateLeaguesIndex() {
       commissioner: state.commissioner,
       managers: state.managers,
       draftPct: pct,
-      lastActive: Date.now()
+      lastActive: Date.now(),
+      tournamentName: state.selectedTournament ? state.selectedTournament.name : null
     };
     const idx = leagues.findIndex(l => l.leagueId === state.leagueId);
     if (idx >= 0) leagues[idx] = entry;
@@ -662,9 +663,13 @@ function _applyLeagueState(saved) {
 function _leagueCardHTML(l) {
   const displayCode = l.leagueCode || l.leagueId || '--';
   const lookupId    = l.leagueId   || l.leagueCode || '--';
+  const tournLine = l.tournamentName
+    ? '<span class="slc-tournament">' + esc(l.tournamentName) + '</span>'
+    : '<span class="slc-tournament slc-tournament--none">No tournament set</span>';
   return '<div class="saved-league-card" data-code="' + esc(lookupId) + '">' +
     '<div class="slc-left"><h4>' + esc(l.leagueName || 'League') + '</h4>' +
-    '<p>' + esc(l.commissioner || '') + ' · ' + (l.managers ? l.managers.length : 0) + ' managers · Code: ' + esc(displayCode) + '</p></div>' +
+    '<p>' + esc(l.commissioner || '') + ' · ' + (l.managers ? l.managers.length : 0) + ' managers · Code: ' + esc(displayCode) + '</p>' +
+    tournLine + '</div>' +
     '<div class="slc-right"><div class="slc-pct">' + (l.draftPct || 0) + '%</div><div class="slc-pct-label">drafted</div>' +
     '<div><button class="enter-btn">Enter</button></div></div></div>';
 }
@@ -925,10 +930,6 @@ function renderHome() {
   if (elnEl && !elnEl.dataset.dirty) elnEl.value = state.leagueName || '';
 
   // Home top bar
-  const otcChipText = document.getElementById('homeOtcChipText');
-  if (otcChipText) otcChipText.textContent = pick ? pick.manager : (isDraftComplete() ? 'Draft Complete' : 'No Draft');
-  const homeYouBadge = document.getElementById('homeYouBadge');
-  if (homeYouBadge) homeYouBadge.style.display = (pick && me && pick.manager === me) ? 'inline-flex' : 'none';
   const homeUserNameEl = document.getElementById('homeUserName');
   if (homeUserNameEl) homeUserNameEl.textContent = session ? session.name : '-';
   const homeUserAvatarEl = document.getElementById('homeUserAvatar');
@@ -2353,7 +2354,7 @@ function renderRegionSimple(content, regData, bracketData, region, customRoundNa
   const roundNames  = customRoundNames || defaultRoundNames;
   const numRounds   = roundNames.length;
   const roundWinners = bracketData.regions[region] || Array(numRounds).fill(null).map(() => []);
-  const canEdit     = isCommissioner();
+  const canEdit = false; // Bracket is read-only; winners are set by live data feed
 
   const seedMap = {};
   (regData.matchups || []).forEach(mu => {
@@ -2405,9 +2406,14 @@ function renderRegionSimple(content, regData, bracketData, region, customRoundNa
         const winner = (roundWinners[rnd] || [])[m] || null;
         const topWon = !!(winner && topTeam && winner === topTeam.name);
         const botWon = !!(winner && botTeam && winner === botTeam.name);
+        const topN = topTeam ? topTeam.name : '';
+        const botN = botTeam ? botTeam.name : '';
+        const statsBtn = '<button class="br-stats-btn" data-top="' + esc(topN) + '" data-bot="' + esc(botN) + '" data-round="' + esc(roundNames[rnd]) + '" title="View game stats">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg>' +
+          '</button>';
         html += '<div class="br-matchup">' +
           makeTeamRow(topTeam, topWon, !topWon && !!winner, rnd, m) +
-          '<div class="br-vs">vs</div>' +
+          '<div class="br-vs-row"><span class="br-vs">vs</span>' + statsBtn + '</div>' +
           makeTeamRow(botTeam, botWon, !botWon && !!winner, rnd, m) +
           '</div>';
       }
@@ -2417,25 +2423,14 @@ function renderRegionSimple(content, regData, bracketData, region, customRoundNa
   html += '</div>';
   content.innerHTML = html;
 
-  if (canEdit) {
-    content.querySelectorAll('.br-team[data-team]').forEach(el => {
-      el.addEventListener('click', () => {
-        const rnd      = parseInt(el.dataset.rnd);
-        const matchIdx = parseInt(el.dataset.match);
-        const teamName = el.dataset.team;
-        if (!teamName) return;
-        const bd = getBracketState() || { regions: {}, finalFour: [null, null], championship: null };
-        if (!bd.regions[region]) bd.regions[region] = Array(numRounds).fill(null).map(() => []);
-        if (!bd.regions[region][rnd]) bd.regions[region][rnd] = [];
-        bd.regions[region][rnd][matchIdx] = teamName;
-        saveBracketState(bd);
-        addActivity(teamName + ' advances in ' + region);
-        saveState();
-        renderBracket();
-      });
+  content.querySelectorAll('.br-stats-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openGameModal(btn.dataset.top, btn.dataset.bot, btn.dataset.round);
     });
-  }
+  });
 }
+
 
 function getOwnerInitials(teamName) {
   // Find if any drafted player from this school
@@ -2450,7 +2445,7 @@ function getOwnerInitials(teamName) {
 
 function renderFinalFour(content, bracketData, readOnly) {
   const ff = window.MM_BRACKET_DATA ? window.MM_BRACKET_DATA.finalFour : [];
-  const canEdit = readOnly ? false : isCommissioner();
+  const canEdit = false; // Bracket is read-only; winners are set by live data feed
   content.innerHTML = '<div class="final-four-view"><div class="ff-section-label">Semifinals</div></div>';
   const view = content.querySelector('.final-four-view');
 
@@ -2463,10 +2458,16 @@ function renderFinalFour(content, bracketData, readOnly) {
 
     const mu = document.createElement('div');
     mu.className = 'bracket-matchup';
+    const ffStatsBtn = '<button class="br-stats-btn" data-top="' + esc(topName || '') + '" data-bot="' + esc(botName || '') + '" data-round="Semifinal" title="View game stats">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg>' +
+      '</button>';
     mu.innerHTML =
       makeFinalFourTeam(topName, semifinal.topRegion, ffWinner === topName, ffWinner && ffWinner !== topName, 'ff', i, 'top', canEdit) +
-      '<div class="bracket-vs">vs</div>' +
+      '<div class="br-vs-row"><span class="bracket-vs">vs</span>' + ffStatsBtn + '</div>' +
       makeFinalFourTeam(botName, semifinal.botRegion, ffWinner === botName, ffWinner && ffWinner !== botName, 'ff', i, 'bot', canEdit);
+    mu.querySelectorAll('.br-stats-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) { e.stopPropagation(); openGameModal(btn.dataset.top, btn.dataset.bot, btn.dataset.round); });
+    });
     view.appendChild(mu);
   });
 
@@ -2481,33 +2482,18 @@ function renderFinalFour(content, bracketData, readOnly) {
   const c1 = bracketData.finalFour[0] || null;
   const c2 = bracketData.finalFour[1] || null;
   const champ = bracketData.championship || null;
+  const champStatsBtn = '<button class="br-stats-btn" data-top="' + esc(c1 || '') + '" data-bot="' + esc(c2 || '') + '" data-round="Championship" title="View game stats">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg>' +
+    '</button>';
   champMu.innerHTML =
     makeFinalFourTeam(c1, 'East/West', champ === c1, champ && champ !== c1, 'champ', 0, 'top', canEdit) +
-    '<div class="bracket-vs">vs</div>' +
+    '<div class="br-vs-row"><span class="bracket-vs">vs</span>' + champStatsBtn + '</div>' +
     makeFinalFourTeam(c2, 'South/Midwest', champ === c2, champ && champ !== c2, 'champ', 1, 'bot', canEdit);
+  champMu.querySelectorAll('.br-stats-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) { e.stopPropagation(); openGameModal(btn.dataset.top, btn.dataset.bot, btn.dataset.round); });
+  });
   view.appendChild(champMu);
 
-  if (canEdit) {
-    content.querySelectorAll('.bracket-team[data-fftype]').forEach(el => {
-      el.addEventListener('click', () => {
-        const fftype = el.dataset.fftype;
-        const idx = parseInt(el.dataset.idx);
-        const name = el.dataset.team;
-        if (!name) return;
-        const bd = getBracketState() || { regions: {}, finalFour: [null, null], championship: null };
-        if (fftype === 'ff') {
-          bd.finalFour[idx] = name;
-        } else if (fftype === 'champ') {
-          bd.championship = name;
-          toast(name + ' is the champion!', 'success');
-          addActivity(name + ' wins the championship!');
-        }
-        saveBracketState(bd);
-        saveState();
-        renderBracket();
-      });
-    });
-  }
 }
 
 function makeFinalFourTeam(name, region, isWinner, isElim, fftype, idx, side, canEdit) {
@@ -2522,6 +2508,73 @@ function makeFinalFourTeam(name, region, isWinner, isElim, fftype, idx, side, ca
     '<span class="bt-name">' + esc(name) + '</span>' +
     (oi ? '<span class="bt-owner">' + oi + '</span>' : '') +
     '</div>';
+}
+
+// ── GAME STATS MODAL ──────────────────────────────────────
+function openGameModal(topName, botName, roundLabel) {
+  const modal = document.getElementById('gameModal');
+  if (!modal) return;
+
+  // Scoreboard header
+  const topLogo   = document.getElementById('gmTopLogo');
+  const botLogo   = document.getElementById('gmBotLogo');
+  const topNameEl = document.getElementById('gmTopName');
+  const botNameEl = document.getElementById('gmBotName');
+  const roundEl   = document.getElementById('gmRoundLabel');
+
+  if (topLogo)   topLogo.innerHTML  = topName ? getSchoolLogoHTML(topName, 36) : '';
+  if (botLogo)   botLogo.innerHTML  = botName ? getSchoolLogoHTML(botName, 36) : '';
+  if (topNameEl) topNameEl.textContent = topName || 'TBD';
+  if (botNameEl) botNameEl.textContent = botName || 'TBD';
+  if (roundEl)   roundEl.textContent  = roundLabel || '';
+
+  // Score + status: empty until live data arrives
+  const topScore = document.getElementById('gmTopScore');
+  const botScore = document.getElementById('gmBotScore');
+  const period   = document.getElementById('gmPeriod');
+  if (topScore) topScore.textContent = '-';
+  if (botScore) botScore.textContent = '-';
+  if (period)   period.textContent   = '';
+
+  // Stats labels
+  const topLabel = document.getElementById('gmTopStatsLabel');
+  const botLabel = document.getElementById('gmBotStatsLabel');
+  if (topLabel) topLabel.textContent = topName || 'TBD';
+  if (botLabel) botLabel.textContent = botName || 'TBD';
+
+  // Build player rows (empty live stats — ready for data feed)
+  function buildRows(college, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const players = (state.players || window.MM_PLAYERS || []).filter(function(p) {
+      return p.college && p.college.toLowerCase() === (college || '').toLowerCase();
+    });
+    if (!players.length) {
+      container.innerHTML = '<div class="gm-no-players">No player data yet</div>';
+      return;
+    }
+    container.innerHTML = players.map(function(p) {
+      return '<div class="gm-stats-row">' +
+        '<span class="gst-player">' + esc(p.name) + ' <span class="gst-pos">' + esc(p.position) + '</span></span>' +
+        '<span class="gst-stat gst-live">-</span>' +
+        '<span class="gst-stat gst-live">-</span>' +
+        '<span class="gst-stat gst-live">-</span>' +
+        '<span class="gst-stat gst-live">-</span>' +
+        '<span class="gst-stat gst-live">-</span>' +
+        '<span class="gst-stat gst-fpts gst-live">-</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  buildRows(topName, 'gmTopRows');
+  buildRows(botName, 'gmBotRows');
+
+  modal.style.display = 'flex';
+}
+
+function closeGameModal() {
+  const modal = document.getElementById('gameModal');
+  if (modal) modal.style.display = 'none';
 }
 
 // ── SCORING SETTINGS ──────────────────────────────────────
@@ -2785,10 +2838,11 @@ function sendRpChatMessage() {
 
 // ── TUTORIAL ──────────────────────────────────────────────
 const TUT_STEPS = [
-  { type: 'welcome',  title: 'Welcome, Commissioner', body: "You're setting up a Tipoff Fantasy league. This takes about 60 seconds." },
-  { type: 'name',     title: 'League Name', body: 'What do you want to call your league?', input: [{ id: 'tut-league-name', label: 'League Name', placeholder: 'e.g. March Madness 2026', default: 'My League', key: 'leagueName' }] },
-  { type: 'size',     title: 'League Size', body: 'How many managers will join? Once the league is full, no one else can join with the code.', size: true },
-  { type: 'rounds',   title: 'Draft Rounds', body: 'How many rounds in the snake draft? Each round, every manager picks one player.', input: [{ id: 'tut-rounds', label: 'Number of Rounds', placeholder: '8', default: 8, type: 'number', key: 'rounds' }] },
+  { type: 'welcome',    title: 'Welcome, Commissioner', body: "You're setting up a Tipoff Fantasy league. This takes about 60 seconds." },
+  { type: 'name',       title: 'League Name', body: 'What do you want to call your league?', input: [{ id: 'tut-league-name', label: 'League Name', placeholder: 'e.g. March Madness 2026', default: 'My League', key: 'leagueName' }] },
+  { type: 'tournament', title: 'Choose Tournament', body: "Which tournament is this league drafting for? This sets your player pool and bracket format." },
+  { type: 'size',       title: 'League Size', body: 'How many managers will join? Once the league is full, no one else can join with the code.', size: true },
+  { type: 'rounds',     title: 'Draft Rounds', body: 'How many rounds in the snake draft? Each round, every manager picks one player.', input: [{ id: 'tut-rounds', label: 'Number of Rounds', placeholder: '8', default: 8, type: 'number', key: 'rounds' }] },
   { type: 'timer',    title: 'Pick Timer', body: 'How long does each manager have to make their selection before auto-pick kicks in?', input: [{ id: 'tut-timer-min', label: 'Minutes', placeholder: '1', default: 1, type: 'number', key: 'timerMin' }, { id: 'tut-timer-sec', label: 'Seconds', placeholder: '30', default: 30, type: 'number', key: 'timerSec' }] },
   { type: 'code',     title: 'Your League Code', body: 'Share this code with your managers. They join from the home screen. No account needed..', code: true },
   { type: 'scoring',  title: 'How Scoring Works', body: 'Points are earned from real tournament stats. Default weights: PTS 1× · REB 1.2× · AST 1.5× · STL 2× · BLK 2×. Adjust anytime in Settings.' },
@@ -2844,6 +2898,22 @@ function applyTutData() {
     const s = isNaN(parseInt(tutData.timerSec)) ? 30 : parseInt(tutData.timerSec);
     state.pickTimerSeconds = Math.max(10, m * 60 + s);
   }
+  if (tutData.tournamentId) {
+    const allT = [];
+    Object.values(TOURNAMENTS).forEach(function(g) { g.forEach(function(t) { allT.push(t); }); });
+    const chosen = allT.find(function(t) { return t.id === tutData.tournamentId; });
+    if (chosen) {
+      state.selectedTournament = chosen;
+      generateBracketData(chosen);
+      if (chosen.bracketFormat !== 'ncaa64' && chosen.seededTeams && chosen.seededTeams.length) {
+        const teamNames = chosen.seededTeams.map(function(t) { return t.name; });
+        state.players = (window.MM_PLAYERS || []).filter(function(p) { return teamNames.includes(p.college); });
+      } else {
+        state.players = (window.MM_PLAYERS || []).slice();
+      }
+      addActivity('Tournament selected: ' + chosen.name);
+    }
+  }
 }
 
 function renderTutStep() {
@@ -2889,6 +2959,23 @@ function renderTutStep() {
     html += '</div>';
   }
 
+  if (step.type === 'tournament') {
+    const available = [];
+    Object.values(TOURNAMENTS).forEach(function(group) {
+      group.forEach(function(t) { if (!t.comingSoon && t.canSelect !== false) available.push(t); });
+    });
+    const selId = tutData.tournamentId;
+    html += '<div class="tut-tourn-list">';
+    available.forEach(function(t) {
+      const active = selId === t.id ? ' tut-tourn-card--active' : '';
+      html += '<button class="tut-tourn-card' + active + '" data-tid="' + esc(t.id) + '">' +
+        '<div class="ttc-name">' + esc(t.name) + '</div>' +
+        '<div class="ttc-meta">' + esc(t.dates) + ' · ' + (t.seededTeams ? t.seededTeams.length : t.teams ? t.teams.length : 8) + ' teams</div>' +
+        '</button>';
+    });
+    html += '</div>';
+  }
+
   if (step.code) {
     html += '<div class="tut-code-block">';
     html += '<div class="tut-code-display">' + (state.leagueCode || '--') + '</div>';
@@ -2900,6 +2987,15 @@ function renderTutStep() {
   }
 
   bodyEl.innerHTML = html;
+
+  // Wire tournament cards
+  bodyEl.querySelectorAll('.tut-tourn-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      tutData.tournamentId = card.dataset.tid;
+      bodyEl.querySelectorAll('.tut-tourn-card').forEach(function(c) { c.classList.remove('tut-tourn-card--active'); });
+      card.classList.add('tut-tourn-card--active');
+    });
+  });
 
   // Wire size pills
   bodyEl.querySelectorAll('.tut-size-pill').forEach(function(pill) {
@@ -3101,6 +3197,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // PDC close
   document.getElementById('pdcClose')?.addEventListener('click', closePDC);
+  document.getElementById('gmClose')?.addEventListener('click', closeGameModal);
+  document.getElementById('gameModal')?.addEventListener('click', function(e) { if (e.target.id === 'gameModal') closeGameModal(); });
   document.getElementById('pdcOverlay')?.addEventListener('click', e => { if (e.target.id === 'pdcOverlay') closePDC(); });
   // Standings simulate + reset
   document.getElementById('simulateBtn')?.addEventListener('click', simulateScores);

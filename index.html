@@ -316,16 +316,6 @@
       <section id="homePage" class="page active-page">
         <!-- Desktop top bar -->
         <div class="home-top-bar">
-          <div class="home-otc-chip" id="homeOtcChip">
-            <span class="home-otc-dot"></span>
-            <div class="home-otc-info">
-              <span class="home-otc-label-text">ON THE CLOCK</span>
-              <div class="home-otc-manager-row">
-                <span id="homeOtcChipText">-</span>
-                <span class="home-you-badge" id="homeYouBadge" style="display:none">YOU</span>
-              </div>
-            </div>
-          </div>
           <div class="home-top-bar-right">
             <button class="home-notif-btn" id="homeNotifBtn" aria-label="Notifications">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -877,7 +867,7 @@
           </div>
           <div class="form-group" style="margin-top:16px;">
             <label>Edit League Name</label>
-            <input type="text" id="settingsEditLeagueName" placeholder="League name" />
+            <input type="text" id="settingsEditLeagueName" placeholder="League name" style="width:auto;" />
             <button id="saveLeagueNameBtn" class="btn-primary btn-sm" style="margin-top:8px;">Save Name</button>
           </div>
           <hr class="divider" />
@@ -1030,6 +1020,75 @@
         <button id="tradeCancelBtn" class="btn-ghost">Cancel</button>
         <button id="tradeConfirmBtn" class="btn-primary">Propose Trade</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Game Stats Modal -->
+  <div id="gameModal" class="modal-backdrop" style="display:none;">
+    <div class="game-modal-card">
+      <button class="gm-close" id="gmClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Scoreboard -->
+      <div class="gm-scoreboard">
+        <div class="gm-team-col gm-team-top">
+          <div class="gm-logo" id="gmTopLogo"></div>
+          <div class="gm-team-name" id="gmTopName">TBD</div>
+          <div class="gm-score" id="gmTopScore">-</div>
+        </div>
+        <div class="gm-mid-col">
+          <div class="gm-status-badge" id="gmStatus">PRE-GAME</div>
+          <div class="gm-period" id="gmPeriod"></div>
+          <div class="gm-round-label" id="gmRoundLabel"></div>
+        </div>
+        <div class="gm-team-col gm-team-bot">
+          <div class="gm-logo" id="gmBotLogo"></div>
+          <div class="gm-team-name" id="gmBotName">TBD</div>
+          <div class="gm-score" id="gmBotScore">-</div>
+        </div>
+      </div>
+
+      <!-- Stats Tables -->
+      <div class="gm-stats-wrap">
+        <!-- Top team stats -->
+        <div class="gm-team-stats-block" id="gmTopStats">
+          <div class="gm-stats-team-label" id="gmTopStatsLabel"></div>
+          <div class="gm-stats-table">
+            <div class="gm-stats-header">
+              <span class="gst-player">Player</span>
+              <span class="gst-stat">PTS</span>
+              <span class="gst-stat">REB</span>
+              <span class="gst-stat">AST</span>
+              <span class="gst-stat">STL</span>
+              <span class="gst-stat">BLK</span>
+              <span class="gst-stat gst-fpts">FPTS</span>
+            </div>
+            <div id="gmTopRows" class="gm-stats-rows"></div>
+          </div>
+        </div>
+
+        <div class="gm-stats-divider"></div>
+
+        <!-- Bot team stats -->
+        <div class="gm-team-stats-block" id="gmBotStats">
+          <div class="gm-stats-team-label" id="gmBotStatsLabel"></div>
+          <div class="gm-stats-table">
+            <div class="gm-stats-header">
+              <span class="gst-player">Player</span>
+              <span class="gst-stat">PTS</span>
+              <span class="gst-stat">REB</span>
+              <span class="gst-stat">AST</span>
+              <span class="gst-stat">STL</span>
+              <span class="gst-stat">BLK</span>
+              <span class="gst-stat gst-fpts">FPTS</span>
+            </div>
+            <div id="gmBotRows" class="gm-stats-rows"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="gm-live-note">Live stats will update automatically once the data feed is connected.</p>
     </div>
   </div>
 

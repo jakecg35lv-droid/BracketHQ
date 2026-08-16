@@ -562,6 +562,14 @@ input:focus, select:focus { outline: 2px solid rgba(79,143,247,0.45); outline-of
 .saved-league-card:hover { background: var(--panel-2); border-color: var(--border-2); transform: translateY(-2px); }
 .slc-left h4 { font-weight: 700; font-size: 16px; margin-bottom: 3px; }
 .slc-left p { color: var(--muted); font-size: 12px; }
+.slc-tournament {
+  display: inline-block; margin-top: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--blue); background: rgba(99,179,237,0.12);
+  border: 1px solid rgba(99,179,237,0.25);
+  border-radius: 20px; padding: 2px 10px;
+}
+.slc-tournament--none { color: var(--muted); background: rgba(255,255,255,0.04); border-color: var(--border); }
 .slc-right { display: flex; align-items: center; gap: 16px; text-align: center; }
 .slc-pct {
   font-family: 'Bebas Neue', sans-serif;
@@ -1637,8 +1645,6 @@ input:focus, select:focus { outline: 2px solid rgba(79,143,247,0.45); outline-of
   display: flex; align-items: center; gap: 10px; padding: 13px 16px;
   transition: background 0.14s; cursor: default;
 }
-.br-team.br-clickable { cursor: pointer; }
-.br-team.br-clickable:hover { background: rgba(79,143,247,0.07); }
 .br-team.br-winner { background: rgba(52,211,153,0.08); border-left: 3px solid var(--green); }
 .br-team.br-loser { opacity: 0.3; }
 .br-team.br-tbd { opacity: 0.5; }
@@ -1653,12 +1659,102 @@ input:focus, select:focus { outline: 2px solid rgba(79,143,247,0.45); outline-of
   background: rgba(79,143,247,0.16); color: var(--blue-light); flex-shrink: 0;
 }
 .br-check { color: var(--green); font-size: 13px; flex-shrink: 0; }
-.br-vs {
-  text-align: center; font-size: 9px; font-weight: 900; text-transform: uppercase;
-  letter-spacing: 0.1em; color: rgba(255,255,255,0.2);
-  padding: 4px 0; background: rgba(0,0,0,0.15);
+.br-vs-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.15);
   border-top: 1px solid rgba(255,255,255,0.05);
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 0 6px;
+}
+.br-vs {
+  flex: 1; text-align: center; font-size: 9px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.1em; color: rgba(255,255,255,0.2);
+  padding: 4px 0;
+}
+.br-stats-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; flex-shrink: 0;
+  background: rgba(79,143,247,0.1); border: 1px solid rgba(79,143,247,0.25);
+  border-radius: 6px; cursor: pointer; color: var(--blue);
+  transition: background 0.15s, border-color 0.15s;
+}
+.br-stats-btn:hover { background: rgba(79,143,247,0.22); border-color: rgba(79,143,247,0.5); }
+
+/* ── GAME MODAL ─────────────────────────────────────────── */
+.game-modal-card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 20px; padding: 24px 20px 20px;
+  width: min(480px, 94vw); max-height: 88vh;
+  overflow-y: auto; position: relative;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.gm-close {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  border-radius: 50%; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--muted);
+}
+.gm-close:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.gm-scoreboard {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.03); border-radius: 14px;
+  padding: 18px 16px;
+}
+.gm-team-col {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; text-align: center;
+}
+.gm-team-name {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  line-height: 1.2; max-width: 90px;
+}
+.gm-score {
+  font-size: 32px; font-weight: 900; color: var(--text);
+  font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.04em;
+}
+.gm-mid-col {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px; flex-shrink: 0;
+}
+.gm-status-badge {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  color: var(--muted); background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 3px 10px;
+}
+.gm-period { font-size: 11px; color: var(--muted); }
+.gm-round-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.gm-stats-wrap { display: flex; flex-direction: column; gap: 16px; }
+.gm-team-stats-block { display: flex; flex-direction: column; gap: 8px; }
+.gm-stats-team-label {
+  font-size: 12px; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--blue);
+}
+.gm-stats-table { display: flex; flex-direction: column; gap: 1px; }
+.gm-stats-header, .gm-stats-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(6, 36px);
+  align-items: center; gap: 4px;
+  font-size: 11px; padding: 5px 6px; border-radius: 6px;
+}
+.gm-stats-header {
+  background: rgba(255,255,255,0.04);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.gm-stats-row { color: var(--text-2); }
+.gm-stats-row:nth-child(odd) { background: rgba(255,255,255,0.02); }
+.gst-player { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gst-pos { font-size: 9px; color: var(--muted); font-weight: 500; }
+.gst-stat { text-align: center; }
+.gst-fpts { color: var(--blue); font-weight: 700; }
+.gst-live { color: var(--muted); }
+.gm-stats-divider { height: 1px; background: var(--border); }
+.gm-no-players { font-size: 12px; color: var(--muted); padding: 8px 0; }
+.gm-live-note {
+  font-size: 11px; color: var(--muted); text-align: center;
+  border-top: 1px solid var(--border); padding-top: 14px; margin: 0;
 }
 
 /* ── Final Four (shared bracket-team styles) ────────────── */
@@ -1988,10 +2084,10 @@ input:focus, select:focus { outline: 2px solid rgba(79,143,247,0.45); outline-of
 .sc-btn-row { display: flex; gap: 10px; }
 .code-display-row { display: flex; align-items: center; gap: 12px; }
 .league-code-badge {
-  font-family: 'Bebas Neue', sans-serif; font-size: 28px; font-weight: 900;
-  letter-spacing: 4px; color: var(--blue-light);
+  font-family: 'Bebas Neue', sans-serif; font-size: 15px; font-weight: 900;
+  letter-spacing: 2px; color: var(--blue-light);
   background: rgba(79,143,247,0.1); border: 1px solid rgba(79,143,247,0.25);
-  padding: 8px 16px; border-radius: var(--radius-xs);
+  padding: 8px 14px; border-radius: var(--radius-xs);
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2189,6 +2285,34 @@ input:focus, select:focus { outline: 2px solid rgba(79,143,247,0.45); outline-of
 .tut-input::placeholder { color: rgba(255,255,255,0.2); }
 
 /* ── Size pill grid ── */
+.tut-tourn-list {
+  display: flex; flex-direction: column;
+  gap: 10px; margin-top: 20px; width: 100%;
+}
+.tut-tourn-card {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 4px; padding: 16px 18px; width: 100%; text-align: left;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 14px; cursor: pointer;
+  transition: all 0.17s ease;
+}
+.tut-tourn-card:hover {
+  background: rgba(79,143,247,0.08);
+  border-color: rgba(79,143,247,0.3);
+}
+.tut-tourn-card--active {
+  background: rgba(79,143,247,0.14);
+  border-color: rgba(79,143,247,0.55);
+  box-shadow: 0 0 0 1px rgba(79,143,247,0.2);
+}
+.ttc-name {
+  font-size: 15px; font-weight: 700; color: var(--text);
+}
+.tut-tourn-card--active .ttc-name { color: var(--blue-light); }
+.ttc-meta {
+  font-size: 12px; color: var(--muted);
+}
 .tut-size-grid {
   display: grid; grid-template-columns: repeat(5, 1fr);
   gap: 8px; margin-top: 22px; width: 100%;
