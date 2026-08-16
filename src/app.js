@@ -204,6 +204,7 @@ function saveState() {
     if (state.leagueId) {
       localStorage.setItem('mmfantasy-league-' + state.leagueId, JSON.stringify(state));
       updateLeaguesIndex();
+      _saveLeagueToFirestore();
     }
   } catch (e) { console.error('saveState', e); }
 }
@@ -256,12 +257,58 @@ function getSession() {
     return raw ? JSON.parse(raw) : null;
   } catch (e) { return null; }
 }
-function setSession(name, email) {
-  try { localStorage.setItem('mmfantasy-session', JSON.stringify({ name, email })); } catch (e) {}
+function setSession(name, email, uid) {
+  try { localStorage.setItem('mmfantasy-session', JSON.stringify({ name, email, uid: uid || null })); } catch (e) {}
 }
 function clearSession() {
   localStorage.removeItem('mmfantasy-session');
   localStorage.removeItem('mmfantasy-state');
+}
+
+// ── FIREBASE HELPERS ──────────────────────────────────────
+let _leagueUnsubscribe = null;
+
+function _fbErrorMsg(code) {
+  const msgs = {
+    'auth/email-already-in-use': 'An account with this email already exists.',
+    'auth/invalid-email':        'Invalid email address.',
+    'auth/weak-password':        'Password must be at least 6 characters.',
+    'auth/user-not-found':       'No account found with this email.',
+    'auth/wrong-password':       'Incorrect password.',
+    'auth/too-many-requests':    'Too many attempts. Try again later.',
+    'auth/invalid-credential':   'Invalid email or password.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  };
+  return msgs[code] || 'Something went wrong. Please try again.';
+}
+
+function _saveLeagueToFirestore() {
+  if (!window._db || !state.leagueCode) return;
+  const toSave = Object.assign({}, state);
+  delete toSave.players; // static, large — loaded from players.js
+  toSave._updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+  toSave._commissionerUid = (window._fbUser && window._fbUser.uid) || null;
+  window._db.collection('leagues').doc(state.leagueCode).set(toSave, { merge: true })
+    .catch(e => console.warn('[Firestore] saveLeague failed:', e.message));
+}
+
+function _subscribeLeague(code) {
+  if (_leagueUnsubscribe) { _leagueUnsubscribe(); _leagueUnsubscribe = null; }
+  if (!window._db || !code) return;
+  _leagueUnsubscribe = window._db.collection('leagues').doc(code)
+    .onSnapshot(doc => {
+      if (!doc.exists) return;
+      const data = doc.data();
+      // Only apply remote data if it's newer than what we have locally
+      const remoteTs = data.lastSaved || 0;
+      const localTs  = state.lastSaved || 0;
+      if (remoteTs > localTs + 1000) { // 1s buffer to avoid echo
+        _applyLeagueState(data);
+        try { localStorage.setItem('mmfantasy-league-' + state.leagueId, JSON.stringify(state)); } catch (e) {}
+        render();
+        toast('League updated.', 'info');
+      }
+    }, e => console.warn('[Firestore] snapshot error:', e));
 }
 
 // ── DRAFT ORDER ───────────────────────────────────────────
@@ -605,6 +652,16 @@ function resumeTimerIfRunning() {
 }
 
 // ── AUTH ──────────────────────────────────────────────────
+function _afterLoginNav() {
+  const loginScreen = document.getElementById('loginScreen');
+  loginScreen.style.transition = 'opacity 0.4s ease';
+  loginScreen.style.opacity = '0';
+  setTimeout(() => {
+    loginScreen.style.opacity = ''; loginScreen.style.transition = ''; loginScreen.style.display = 'none';
+    if (loadState() && state.leagueId) { enterLeague(); } else { showSplash(true); }
+  }, 420);
+}
+
 function handleLogin() {
   const email    = (document.getElementById('loginEmail').value || '').trim();
   const password = (document.getElementById('loginPassword').value || '');
@@ -614,18 +671,38 @@ function handleLogin() {
   if (!email.includes('@')) { errEl.textContent = 'Enter a valid email.'; errEl.style.display = 'block'; return; }
   if (password.length < 6)  { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
 
-  const existingSession = getSession();
-  const name = (existingSession && existingSession.email === email && existingSession.name)
-    ? existingSession.name
-    : (email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Player');
-  setSession(name, email);
-  const loginScreen = document.getElementById('loginScreen');
-  loginScreen.style.transition = 'opacity 0.4s ease';
-  loginScreen.style.opacity = '0';
-  setTimeout(() => {
-    loginScreen.style.opacity = ''; loginScreen.style.transition = ''; loginScreen.style.display = 'none';
-    if (loadState() && state.leagueId) { enterLeague(); } else { showSplash(true); }
-  }, 420);
+  if (window._auth) {
+    const btn = document.getElementById('loginSubmitBtn');
+    btn.textContent = 'Signing in…'; btn.disabled = true;
+    window._auth.signInWithEmailAndPassword(email, password)
+      .then(cred => {
+        window._fbUser = cred.user;
+        const namePromise = window._db
+          ? window._db.collection('users').doc(cred.user.uid).get()
+              .then(doc => (doc.exists && doc.data().displayName) || email.split('@')[0])
+              .catch(() => email.split('@')[0])
+          : Promise.resolve(email.split('@')[0]);
+        return namePromise;
+      })
+      .then(name => {
+        setSession(name, email, window._fbUser ? window._fbUser.uid : null);
+        btn.textContent = 'Sign In'; btn.disabled = false;
+        _afterLoginNav();
+      })
+      .catch(e => {
+        errEl.textContent = _fbErrorMsg(e.code);
+        errEl.style.display = 'block';
+        btn.textContent = 'Sign In'; btn.disabled = false;
+      });
+  } else {
+    // Offline fallback
+    const existingSession = getSession();
+    const name = (existingSession && existingSession.email === email && existingSession.name)
+      ? existingSession.name
+      : (email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Player');
+    setSession(name, email, null);
+    _afterLoginNav();
+  }
 }
 
 function handleSignup() {
@@ -642,14 +719,46 @@ function handleSignup() {
   if (password.length < 6)          { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
   if (password !== confirm)          { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
 
-  setSession(username, email);
-  const signupScreen = document.getElementById('signupScreen');
-  signupScreen.style.transition = 'opacity 0.4s ease';
-  signupScreen.style.opacity = '0';
-  setTimeout(() => {
-    signupScreen.style.opacity = ''; signupScreen.style.transition = ''; signupScreen.style.display = 'none';
-    showSplash(true);
-  }, 420);
+  function _afterSignupNav() {
+    const signupScreen = document.getElementById('signupScreen');
+    signupScreen.style.transition = 'opacity 0.4s ease';
+    signupScreen.style.opacity = '0';
+    setTimeout(() => {
+      signupScreen.style.opacity = ''; signupScreen.style.transition = ''; signupScreen.style.display = 'none';
+      showSplash(true);
+    }, 420);
+  }
+
+  if (window._auth) {
+    const btn = document.getElementById('signupSubmitBtn');
+    btn.textContent = 'Creating account…'; btn.disabled = true;
+    window._auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => {
+        window._fbUser = cred.user;
+        const writeProfile = window._db
+          ? window._db.collection('users').doc(cred.user.uid).set({
+              displayName: username,
+              email: email,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+          : Promise.resolve();
+        return writeProfile;
+      })
+      .then(() => {
+        setSession(username, email, window._fbUser ? window._fbUser.uid : null);
+        btn.textContent = 'Create Account'; btn.disabled = false;
+        _afterSignupNav();
+      })
+      .catch(e => {
+        errEl.textContent = _fbErrorMsg(e.code);
+        errEl.style.display = 'block';
+        btn.textContent = 'Create Account'; btn.disabled = false;
+      });
+  } else {
+    // Offline fallback
+    setSession(username, email, null);
+    _afterSignupNav();
+  }
 }
 
 // ── SPLASH ────────────────────────────────────────────────
@@ -684,6 +793,26 @@ function _attachLeagueCardListeners(container) {
 
 function _loadAndEnterLeague(code) {
   if (!code) return;
+  if (window._db) {
+    // Try Firestore first (leagueCode is the doc ID)
+    // Strip 'league_' prefix if present (old format stored as leagueId)
+    const fsCode = code.startsWith('league_') ? null : code;
+    if (fsCode) {
+      window._db.collection('leagues').doc(fsCode).get()
+        .then(doc => {
+          if (doc.exists) {
+            _applyLeagueState(doc.data());
+            saveState();
+            _subscribeLeague(fsCode);
+            enterLeague();
+          } else {
+            _loadAndEnterLeagueLocal(code);
+          }
+        })
+        .catch(() => _loadAndEnterLeagueLocal(code));
+      return;
+    }
+  }
   _loadAndEnterLeagueLocal(code);
 }
 
@@ -694,6 +823,7 @@ function _loadAndEnterLeagueLocal(code) {
     if (raw) {
       _applyLeagueState(JSON.parse(raw));
       saveState();
+      _subscribeLeague(state.leagueCode);
       enterLeague();
     }
   } catch (e) { console.error('loadLocal', e); }
@@ -806,29 +936,59 @@ function checkInviteURL() {
 
 // ── JOIN LEAGUE ───────────────────────────────────────────
 function handleJoin() {
-  const code = (document.getElementById('joinCodeInput').value || '').trim().toUpperCase();
+  const code  = (document.getElementById('joinCodeInput').value || '').trim().toUpperCase();
   const errEl = document.getElementById('joinError');
   errEl.style.display = 'none';
   if (code.length !== 6) { errEl.textContent = 'Code must be 6 characters.'; errEl.style.display = 'block'; return; }
 
-  const leagueId = localStorage.getItem('mmfantasy-code-' + code);
-  const raw = leagueId ? localStorage.getItem('mmfantasy-league-' + leagueId) : null;
-  if (!raw) { errEl.textContent = 'League not found. Check the code and try again.'; errEl.style.display = 'block'; return; }
-  let saved;
-  try { saved = JSON.parse(raw); } catch (e) { errEl.textContent = 'League data is corrupted.'; errEl.style.display = 'block'; return; }
-  const session = getSession();
-  const name = session ? session.name : 'Player';
-  const max = saved.maxManagers || 8;
-  if (!saved.managers.includes(name) && saved.managers.length >= max) {
-    errEl.textContent = 'This league is full (' + max + '/' + max + ' managers).';
-    errEl.style.display = 'block';
-    return;
+  const btn = document.getElementById('joinConfirmBtn');
+
+  function _finalize(saved) {
+    const session = getSession();
+    const name = session ? session.name : 'Player';
+    const max = saved.maxManagers || 8;
+    if (!saved.managers.includes(name) && saved.managers.length >= max) {
+      errEl.textContent = 'This league is full (' + max + '/' + max + ' managers).';
+      errEl.style.display = 'block';
+      if (btn) { btn.textContent = 'Join'; btn.disabled = false; }
+      return;
+    }
+    if (!saved.managers.includes(name)) saved.managers.push(name);
+    _applyLeagueState(saved);
+    saveState();
+    document.getElementById('joinModal').style.display = 'none';
+    _subscribeLeague(state.leagueCode);
+    enterLeague();
   }
-  if (!saved.managers.includes(name)) saved.managers.push(name);
-  _applyLeagueState(saved);
-  saveState();
-  document.getElementById('joinModal').style.display = 'none';
-  enterLeague();
+
+  function _tryLocal() {
+    const leagueId = localStorage.getItem('mmfantasy-code-' + code);
+    const raw = leagueId ? localStorage.getItem('mmfantasy-league-' + leagueId) : null;
+    if (!raw) { errEl.textContent = 'League not found. Check the code and try again.'; errEl.style.display = 'block'; if (btn) { btn.textContent = 'Join'; btn.disabled = false; } return; }
+    let saved;
+    try { saved = JSON.parse(raw); } catch (e) { errEl.textContent = 'League data is corrupted.'; errEl.style.display = 'block'; if (btn) { btn.textContent = 'Join'; btn.disabled = false; } return; }
+    _finalize(saved);
+  }
+
+  if (window._db) {
+    if (btn) { btn.textContent = 'Joining…'; btn.disabled = true; }
+    window._db.collection('leagues').doc(code).get()
+      .then(doc => {
+        if (btn) { btn.textContent = 'Join'; btn.disabled = false; }
+        if (doc.exists) {
+          _finalize(doc.data());
+        } else {
+          _tryLocal();
+        }
+      })
+      .catch(e => {
+        console.warn('[Firestore] join lookup failed:', e.message);
+        if (btn) { btn.textContent = 'Join'; btn.disabled = false; }
+        _tryLocal();
+      });
+  } else {
+    _tryLocal();
+  }
 }
 
 // ── COMMISSIONER VISIBILITY ───────────────────────────────
@@ -3042,6 +3202,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('showLoginLink')?.addEventListener('click', e => { e.preventDefault(); showLogin(); });
   document.getElementById('signupSubmitBtn')?.addEventListener('click', handleSignup);
   function doSignOut() {
+    if (_leagueUnsubscribe) { _leagueUnsubscribe(); _leagueUnsubscribe = null; }
+    if (window._auth && window._auth.currentUser) {
+      window._auth.signOut().catch(e => console.warn('[Auth] signOut error:', e));
+    }
     clearSession();
     state = Object.assign({}, defaultState);
     state.players = (window.MM_PLAYERS || []).slice();
@@ -3363,11 +3527,39 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   // ── BOOT ──────────────────────────────────────────────────
-  const session = getSession();
-  if (session) {
-    if (loadState() && state.leagueId) { enterLeague(); }
-    else { showSplash(true); }
-  } else { showLanding(); }
+  let _authBootFired = false;
+  if (window._auth) {
+    window._auth.onAuthStateChanged(function(user) {
+      if (_authBootFired) { window._fbUser = user; return; } // ignore post-login/logout re-fires here
+      _authBootFired = true;
+      window._fbUser = user;
+      if (user) {
+        // Restore display name from localStorage session or Firebase
+        const sess = getSession();
+        if (sess && sess.uid === user.uid) {
+          // session already set, nothing to do
+        } else {
+          const name = (sess && sess.name) || user.displayName || user.email.split('@')[0];
+          setSession(name, user.email, user.uid);
+        }
+        if (loadState() && state.leagueId) { _subscribeLeague(state.leagueCode); enterLeague(); }
+        else { showSplash(true); }
+      } else {
+        // Firebase says no user — check localStorage session (offline/testing fallback)
+        const session = getSession();
+        if (session) {
+          if (loadState() && state.leagueId) { enterLeague(); }
+          else { showSplash(true); }
+        } else { showLanding(); }
+      }
+    });
+  } else {
+    const session = getSession();
+    if (session) {
+      if (loadState() && state.leagueId) { enterLeague(); }
+      else { showSplash(true); }
+    } else { showLanding(); }
+  }
 
   // Landing screen buttons
   document.getElementById('landingCreateBtn')?.addEventListener('click', showSignup);
